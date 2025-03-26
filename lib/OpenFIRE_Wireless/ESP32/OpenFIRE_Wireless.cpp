@@ -41,8 +41,8 @@ uint8_t tipo_connessione = 0;
 
 const uint8_t BROADCAST_ADDR[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 #if defined(DONGLE)
-  uint8_t peerAddress[6] = {0x24, 0x58, 0x7C, 0xDA, 0x38, 0xA0}; // quello montato con piedini su breackboard
-  //const uint8_t peerAddress[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // broadcast
+  ///////////////////////uint8_t peerAddress[6] = {0x24, 0x58, 0x7C, 0xDA, 0x38, 0xA0}; // quello montato con piedini su breackboard
+  uint8_t peerAddress[6] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // broadcast
 
   const functionPtr callbackArr[] = { packet_callback_read_dongle };
 #elif defined(GUN)
@@ -372,9 +372,12 @@ bool SerialWireless_::connection_dongle() {
 
   while (stato_connessione_wireless != 5) {
     if (stato_connessione_wireless == 0) {
-      if ((millis() - lastMillis_change_channel) > TIMEOUT_CHANGE_CHANNEL) {
+      if ((millis() - lastMillis_change_channel) > TIMEOUT_CHANGE_CHANNEL) { 
         channel++;
         if (channel >13) channel = 1;
+        if (esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE) != ESP_OK) {
+          Serial.printf("DONGLE - esp_wifi_set_channel failed!");
+        }
         peerInfo.channel = channel;
         if (esp_now_mod_peer(&peerInfo) != ESP_OK) {  // modifica il canale del peer
           Serial.println("DONGLE - Errore nella modifica del canale");
