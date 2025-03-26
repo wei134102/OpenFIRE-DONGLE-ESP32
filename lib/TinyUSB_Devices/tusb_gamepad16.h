@@ -19,9 +19,6 @@
 
 #pragma once
 
-//#include "tusb.h"
-//#include "class/hid/hid_device.h"
-
 #define TUD_HID_REPORT_DESC_GAMEPAD16(...) \
   HID_USAGE_PAGE ( HID_USAGE_PAGE_DESKTOP     )                 ,\
   HID_USAGE      ( HID_USAGE_DESKTOP_GAMEPAD  )                 ,\

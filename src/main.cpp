@@ -476,6 +476,10 @@ void setup() {
            
     // Initializing the USB devices chunk.
     TinyUSBDevices.begin(1); 
+    SerialWireless.begin();
+    SerialWireless.connection_dongle();
+
+
     // wait until device mounted
     #define MILLIS_TIMEOUT  5000 //5 secondi
            
