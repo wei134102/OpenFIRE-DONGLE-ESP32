@@ -2,9 +2,11 @@
 
 #include <Arduino.h>
 
+
 #include "TinyUSB_Devices.h"
 
 #if defined(DEVICE_LILYGO_T_DONGLE_S3)
+  #include "logo.h"
   #include "pin_config_DONGLE.h"
   #include <Adafruit_ST7735.h>
   Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST);
@@ -29,7 +31,7 @@
 #define OPENFIRE_DONGLE_CODENAME "Sessantanove"
 
 #define DEVICE_VID 0xF143
-#define DEVICE_PID 0x1998
+#define DEVICE_PID 0x1998 // ????????
 
 #define MANUFACTURER_NAME "OpenFIRE_DONGLE"
 #define DEVICE_NAME "FIRECon_DONGLE"
@@ -63,6 +65,8 @@ void setup() {
   #endif
   // ======================== FINE X GESTIONE DUAL CORE =================================
           
+  #ifdef COMMANDO
+
   if (!TinyUSBDevice.isInitialized()) { // aggiunto ..funzionava lo stesso, ma così è più sicuro .. sicuramente serve per Esp32 con libreria non integrfata nel core
     TinyUSBDevice.begin(0);
   }
@@ -72,9 +76,13 @@ void setup() {
   
   // Initializing the USB devices chunk.
   TinyUSBDevices.begin(1); 
+  
   SerialWireless.begin();
   SerialWireless.connection_dongle();
   
+  #endif // COMMENTO
+
+
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
     pinMode(TFT_LEDA_PIN, OUTPUT);
     digitalWrite(TFT_LEDA_PIN, 0); // accende retroilluminazione del display
@@ -101,7 +109,41 @@ void setup() {
     tft.setTextColor(GREEN);
     tft.println("WWW.ADRIROBOT.IT");
     delay (1000);
+    // logo OpenFire
+    tft.fillScreen(BLACK);
+    tft.drawBitmap(40, 0, customSplashBanner, CUSTSPLASHBANN_WIDTH, CUSTSPLASHBANN_HEIGHT, BLUE); // logo tondo
+    tft.drawBitmap(56, 23, customSplash, CUSTSPLASH_WIDTH, CUSTSPLASH_HEIGHT, RED); // scritta "OpenFire"
+    //tft.drawXBitmap();
+    delay (1000);
+    tft.fillScreen(BLACK);
+    tft.drawRGBBitmap(50,17,(uint16_t *)logo_rgb,LOGO_RGB_WIDTH,LOGO_RGB_HEIGHT);
+    delay (1000);
+    tft.fillScreen(BLACK);
+    tft.drawRGBBitmap(55,20,(uint16_t *)logo_rgb_alpha,LOGO_RGB_ALPHA_WIDTH,LOGO_RGB_ALPHA_HEIGHT);
+    delay (1000);
+    tft.fillScreen(BLACK);
+    tft.drawRGBBitmap(10,1,(uint16_t *)logo_rgb_alpha_open,LOGO_RGB_ALPHA_OPEN_WIDTH,LOGO_RGB_ALPHA_OPEN_HEIGHT);
+    
   #endif // DEVICE_LILYGO_T_DONGLE_S3
+
+  // ====== gestione connessione wireless ====================
+  SerialWireless.begin();
+  SerialWireless.connection_dongle();
+  // ====== fine gestione wireless .. va avanti solo dopo che si è accoppiato il dispositivo =======
+
+  // ====== connessione USB ====== imposta VID e PID come quello che gli passa la pistola ===============
+  if (!TinyUSBDevice.isInitialized()) { // aggiunto ..funzionava lo stesso, ma così è più sicuro .. sicuramente serve per Esp32 con libreria non integrfata nel core
+    TinyUSBDevice.begin(0);
+  }
+  TinyUSBDevice.setManufacturerDescriptor(MANUFACTURER_NAME);
+  TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
+  TinyUSBDevice.setID(DEVICE_VID, DEVICE_PID);   
+  
+  // Initializing the USB devices chunk.
+  TinyUSBDevices.begin(1); 
+  // ====== fine connessione USB ==========================================================================
+
+
 }
 
 #define FIFO_SIZE_READ_SER 200  // l'originale era 32
