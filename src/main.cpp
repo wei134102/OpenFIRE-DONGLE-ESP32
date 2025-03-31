@@ -30,11 +30,11 @@
 #define OPENFIRE_DONGLE_VERSION 6.9
 #define OPENFIRE_DONGLE_CODENAME "Sessantanove"
 
-#define DEVICE_VID 0xF143
-#define DEVICE_PID 0x1998 // ????????
+//#define DEVICE_VID 0xF143
+//#define DEVICE_PID 0x1998 // ????????
 
-#define MANUFACTURER_NAME "OpenFIRE_DONGLE"
-#define DEVICE_NAME "FIRECon_DONGLE"
+//#define MANUFACTURER_NAME "OpenFIRE_DONGLE"
+//#define DEVICE_NAME "FIRECon_DONGLE"
 
 
 
@@ -131,13 +131,42 @@ void setup() {
   SerialWireless.connection_dongle();
   // ====== fine gestione wireless .. va avanti solo dopo che si è accoppiato il dispositivo =======
 
+// va messa nella libreria wireless
+
+  typedef struct __attribute__ ((packed)) {
+    char deviceManufacturer[21];
+    char deviceName[16];
+    uint16_t deviceVID;
+    uint16_t devicePID;
+    uint8_t devicePlayer;
+    //char deviceSerial[11];
+  } USB_Data_GUN_Wireless;
+
+USB_Data_GUN_Wireless usb_data_wireless = {
+"OpenFIRE_DONGLE",
+"FIRECon",
+0xF143,
+0x1998, // 0x0001
+1
+//,""
+};
+
+
+  char MANUFACTURER_NAME[21] = "OpenFIRE_DONGLE"; // questo fisso ??????? max 20 caratteri
+  char DEVICE_NAME[16] = "FIRECon"; // massimo 15 caratteri
+  uint16_t DEVICE_VID = 0xF143; // questo fisso ????? - 2 byte
+  uint16_t DEVICE_PID = 0x0001; // sarebbe il player number - 2 byte
+  //char SERIAL_DESCRIPTION[16] = "01"; // ??? può essere utile per distinguere dispositivi con stesso VID e PID   - max 15 caratteri
+
   // ====== connessione USB ====== imposta VID e PID come quello che gli passa la pistola ===============
   if (!TinyUSBDevice.isInitialized()) { // aggiunto ..funzionava lo stesso, ma così è più sicuro .. sicuramente serve per Esp32 con libreria non integrfata nel core
     TinyUSBDevice.begin(0);
   }
+  //TinyUSBDevice.setLanguageDescriptor(0); // per impostare lingua - utile ???? default è inglese
   TinyUSBDevice.setManufacturerDescriptor(MANUFACTURER_NAME);
   TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
-  TinyUSBDevice.setID(DEVICE_VID, DEVICE_PID);   
+  TinyUSBDevice.setID(DEVICE_VID, DEVICE_PID);
+  //TinyUSBDevice.setSerialDescriptor(SERIAL_DESCRIPTION); // ??? può essere utile per distinguere dispositivi con stesso VID e PID   
   
   // Initializing the USB devices chunk.
   TinyUSBDevices.begin(1); 

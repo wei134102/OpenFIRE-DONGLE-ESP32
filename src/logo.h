@@ -1,16 +1,5 @@
 #pragma once
 
-//spostare impostazione usb dopo la negosizione wireless con i dati che si scambiano VID _PID player __ altri ? i dati aggiungerli al primo invio o all'ultimo della gun
-
-
-//case Screen_Docked:
-//            display->fillRect(0, 0, 128, 16, BLACK);
-//            display->drawBitmap(24, 0, customSplashBanner, CUSTSPLASHBANN_WIDTH, CUSTSPLASHBANN_HEIGHT, WHITE);
-//            display->drawBitmap(40, 16, customSplash, CUSTSPLASH_WIDTH, CUSTSPLASH_HEIGHT, WHITE);
-//            display->display();
-//            break;
-
-
     #define CUSTSPLASHBANN_WIDTH 80
     #define CUSTSPLASHBANN_HEIGHT 16
     static constexpr uint8_t customSplashBanner[] = {
