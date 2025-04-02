@@ -30,11 +30,11 @@
 #define OPENFIRE_DONGLE_VERSION 6.9
 #define OPENFIRE_DONGLE_CODENAME "Sessantanove"
 
-//#define DEVICE_VID 0xF143
-//#define DEVICE_PID 0x1998 // ????????
+#define DEVICE_VID 0xF143
+#define DEVICE_PID 0x0001 // ????????
 
-//#define MANUFACTURER_NAME "OpenFIRE_DONGLE"
-//#define DEVICE_NAME "FIRECon_DONGLE"
+#define MANUFACTURER_NAME "OpenFIRE_DONGLE"
+#define DEVICE_NAME "FIRECon_DONGLE"
 
 
 
@@ -65,7 +65,7 @@ void setup() {
   #endif
   // ======================== FINE X GESTIONE DUAL CORE =================================
           
-  #ifdef COMMANDO
+  #ifdef COMMENTO
 
   if (!TinyUSBDevice.isInitialized()) { // aggiunto ..funzionava lo stesso, ma così è più sicuro .. sicuramente serve per Esp32 con libreria non integrfata nel core
     TinyUSBDevice.begin(0);
@@ -91,6 +91,9 @@ void setup() {
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
     tft.initR(INITR_MINI160x80_PLUGIN);  // Init ST7735S mini display
     tft.setRotation(3);
+    
+    /*
+    // prove
     tft.fillScreen(BLACK);
     tft.setTextSize(2);
     tft.setCursor(0, 0);
@@ -109,6 +112,7 @@ void setup() {
     tft.setTextColor(GREEN);
     tft.println("WWW.ADRIROBOT.IT");
     delay (1000);
+    */
     // logo OpenFire
     tft.fillScreen(BLACK);
     tft.drawBitmap(40, 0, customSplashBanner, CUSTSPLASHBANN_WIDTH, CUSTSPLASHBANN_HEIGHT, BLUE); // logo tondo
@@ -131,47 +135,80 @@ void setup() {
   SerialWireless.connection_dongle();
   // ====== fine gestione wireless .. va avanti solo dopo che si è accoppiato il dispositivo =======
 
-// va messa nella libreria wireless
-
-  typedef struct __attribute__ ((packed)) {
-    char deviceManufacturer[21];
-    char deviceName[16];
-    uint16_t deviceVID;
-    uint16_t devicePID;
-    uint8_t devicePlayer;
-    //char deviceSerial[11];
-  } USB_Data_GUN_Wireless;
-
-USB_Data_GUN_Wireless usb_data_wireless = {
-"OpenFIRE_DONGLE",
-"FIRECon",
-0xF143,
-0x1998, // 0x0001
-1
-//,""
-};
-
-
-  char MANUFACTURER_NAME[21] = "OpenFIRE_DONGLE"; // questo fisso ??????? max 20 caratteri
-  char DEVICE_NAME[16] = "FIRECon"; // massimo 15 caratteri
-  uint16_t DEVICE_VID = 0xF143; // questo fisso ????? - 2 byte
-  uint16_t DEVICE_PID = 0x0001; // sarebbe il player number - 2 byte
-  //char SERIAL_DESCRIPTION[16] = "01"; // ??? può essere utile per distinguere dispositivi con stesso VID e PID   - max 15 caratteri
 
   // ====== connessione USB ====== imposta VID e PID come quello che gli passa la pistola ===============
   if (!TinyUSBDevice.isInitialized()) { // aggiunto ..funzionava lo stesso, ma così è più sicuro .. sicuramente serve per Esp32 con libreria non integrfata nel core
     TinyUSBDevice.begin(0);
   }
-  //TinyUSBDevice.setLanguageDescriptor(0); // per impostare lingua - utile ???? default è inglese
-  TinyUSBDevice.setManufacturerDescriptor(MANUFACTURER_NAME);
-  TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
-  TinyUSBDevice.setID(DEVICE_VID, DEVICE_PID);
-  //TinyUSBDevice.setSerialDescriptor(SERIAL_DESCRIPTION); // ??? può essere utile per distinguere dispositivi con stesso VID e PID   
   
+  //SerialWireless.begin();
+  //SerialWireless.connection_dongle();
+  
+  //TinyUSBDevice.setLanguageDescriptor(0); // per impostare lingua - utile ???? default è inglese
+  //TinyUSBDevice.setManufacturerDescriptor(MANUFACTURER_NAME);
+  //TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
+  //TinyUSBDevice.setID(DEVICE_VID, DEVICE_PID);
+  //TinyUSBDevice.setSerialDescriptor(SERIAL_DESCRIPTION); // ??? può essere utile per distinguere dispositivi con stesso VID e PID   
+
+  
+  TinyUSBDevice.setManufacturerDescriptor(usb_data_wireless.deviceManufacturer);
+  TinyUSBDevice.setProductDescriptor(usb_data_wireless.deviceName);
+  TinyUSBDevice.setID(usb_data_wireless.deviceVID, usb_data_wireless.devicePID);
+  
+
+  
+
+
+  //TinyUSBDevice.setManufacturerDescriptor(MANUFACTURER_NAME);
+  //TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
+  //TinyUSBDevice.setID(DEVICE_VID, DEVICE_PID);   
+  //TinyUSBDevice.setSerialDescriptor(usb_data_wireless.deviceSerial); // ??? può essere utile per distinguere dispositivi con stesso VID e PID   
+  
+
+
+
   // Initializing the USB devices chunk.
   TinyUSBDevices.begin(1); 
   // ====== fine connessione USB ==========================================================================
 
+  //SerialWireless.begin();
+  //SerialWireless.connection_dongle();
+
+  #if defined(DEVICE_LILYGO_T_DONGLE_S3)
+    tft.fillScreen(BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(0, 0);
+    tft.setTextColor(RED);
+    tft.println("CONNESSO");
+    tft.setCursor(0, 20);
+    tft.setTextColor(GRAY);
+    tft.println(usb_data_wireless.deviceName);
+    tft.setTextColor(BLUE);
+    tft.setCursor(15, 40);
+    tft.printf("Player: %d", usb_data_wireless.devicePlayer);
+    tft.setTextSize(1);
+    tft.setCursor(30, 70);
+    tft.setTextColor(GREEN);
+    tft.printf("Channel: %d", usb_data_wireless.channel);
+
+  #endif // DEVICE_LILYGO_T_DONGLE_S3
+
+  #ifdef COMMENTO
+  Serial.println("");
+  Serial.println("DATI DELLA GUN");
+  Serial.print("Manufacturer: ");
+  Serial.println(usb_data_wireless.deviceManufacturer);
+  Serial.print("Name: ");
+  Serial.println(usb_data_wireless.deviceName);
+  Serial.print("VID: ");
+  Serial.println(usb_data_wireless.deviceVID);
+  Serial.print("PID: ");
+  Serial.println(usb_data_wireless.devicePID);
+  Serial.print("PLAYER: ");
+  Serial.println(usb_data_wireless.devicePlayer);
+  Serial.print("CHANNEL: ");
+  Serial.println(usb_data_wireless.channel);
+#endif // COMMENTO
 
 }
 
