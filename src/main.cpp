@@ -66,6 +66,7 @@ void setup() {
     tft.initR(INITR_MINI160x80_PLUGIN);  // Init ST7735S mini display
     tft.setRotation(3);
     
+    /*
     // logo OpenFire
     tft.fillScreen(BLACK);
     tft.drawBitmap(40, 0, customSplashBanner, CUSTSPLASHBANN_WIDTH, CUSTSPLASHBANN_HEIGHT, BLUE); // logo tondo
@@ -78,9 +79,30 @@ void setup() {
     tft.fillScreen(BLACK);
     tft.drawRGBBitmap(55,20,(uint16_t *)logo_rgb_alpha,LOGO_RGB_ALPHA_WIDTH,LOGO_RGB_ALPHA_HEIGHT);
     delay (1000);
+    */
     tft.fillScreen(BLACK);
     tft.drawRGBBitmap(10,1,(uint16_t *)logo_rgb_alpha_open,LOGO_RGB_ALPHA_OPEN_WIDTH,LOGO_RGB_ALPHA_OPEN_HEIGHT);
-    
+    delay (3000);
+
+    tft.fillScreen(BLACK);
+    tft.setTextSize(2);
+    tft.setCursor(0, 0);
+    tft.setTextColor(RED);
+    tft.println("..SEARCHING..");
+    //tft.drawRGBBitmap(0,20,(uint16_t *)logo_rgb,LOGO_RGB_WIDTH,LOGO_RGB_HEIGHT);
+    //tft.drawRGBBitmap(5,25,(uint16_t *)logo_rgb_alpha,LOGO_RGB_ALPHA_WIDTH,LOGO_RGB_ALPHA_HEIGHT);
+    tft.drawBitmap(10, 25, customSplash, CUSTSPLASH_WIDTH, CUSTSPLASH_HEIGHT, BLUE);
+    tft.setTextSize(2);
+    tft.setCursor(65, 30);
+    tft.setTextColor(GRAY);
+    tft.println("Channel");
+    tft.setTextSize(2);
+    //tft.setCursor(100, 60);
+    tft.setTextColor(WHITE);
+    //tft.printf("Player: %2d", 1);
+    //tft.println("1");
+    //tft.fillRect(100,60,50,20,0/*BLACK*/);
+
   #endif // DEVICE_LILYGO_T_DONGLE_S3
 
   // ====== gestione connessione wireless ====================
@@ -102,20 +124,25 @@ void setup() {
   // ====== fine connessione USB ==========================================================================
   
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
+    
     tft.fillScreen(BLACK);
+    /*
     tft.setTextSize(2);
     tft.setCursor(0, 0);
     tft.setTextColor(RED);
     tft.println("CONNESSO");
+    */
+    tft.drawBitmap(40, 0, customSplashBanner, CUSTSPLASHBANN_WIDTH, CUSTSPLASHBANN_HEIGHT, BLUE);
+    tft.setTextSize(2);
     tft.setCursor(0, 20);
-    tft.setTextColor(GRAY);
+    tft.setTextColor(RED);
     tft.println(usb_data_wireless.deviceName);
-    tft.setTextColor(BLUE);
-    tft.setCursor(15, 40);
+    tft.setTextColor(RED);
+    tft.setCursor(0, 40);
     tft.printf("Player: %d", usb_data_wireless.devicePlayer);
-    tft.setTextSize(1);
-    tft.setCursor(30, 70);
-    tft.setTextColor(GREEN);
+    tft.setTextSize(2);
+    tft.setCursor(0, 60);
+    tft.setTextColor(GRAY);
     tft.printf("Channel: %d", usb_data_wireless.channel);
 
   #endif // DEVICE_LILYGO_T_DONGLE_S3
