@@ -30,14 +30,6 @@
 #define OPENFIRE_DONGLE_VERSION 6.9
 #define OPENFIRE_DONGLE_CODENAME "Sessantanove"
 
-#define DEVICE_VID 0xF143
-#define DEVICE_PID 0x0001 // ????????
-
-#define MANUFACTURER_NAME "OpenFIRE_DONGLE"
-#define DEVICE_NAME "FIRECon_DONGLE"
-
-
-
 // ================== GESTIONE DUAL CORE ============================
 #if defined(DUAL_CORE) && defined(ESP_PLATFORM) && false
         void setup1();
@@ -63,26 +55,8 @@ void setup() {
     &task_loop1,            /* Task handle to keep track of created task */
     !ARDUINO_RUNNING_CORE); /* pin task to core 0 */
   #endif
-  // ======================== FINE X GESTIONE DUAL CORE =================================
-          
-  #ifdef COMMENTO
-
-  if (!TinyUSBDevice.isInitialized()) { // aggiunto ..funzionava lo stesso, ma così è più sicuro .. sicuramente serve per Esp32 con libreria non integrfata nel core
-    TinyUSBDevice.begin(0);
-  }
-  TinyUSBDevice.setManufacturerDescriptor(MANUFACTURER_NAME);
-  TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
-  TinyUSBDevice.setID(DEVICE_VID, DEVICE_PID);   
-  
-  // Initializing the USB devices chunk.
-  TinyUSBDevices.begin(1); 
-  
-  SerialWireless.begin();
-  SerialWireless.connection_dongle();
-  
-  #endif // COMMENTO
-
-
+  // ======================== FINE X GESTIONE DUAL CORE =================================       
+ 
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
     pinMode(TFT_LEDA_PIN, OUTPUT);
     digitalWrite(TFT_LEDA_PIN, 0); // accende retroilluminazione del display
@@ -92,27 +66,6 @@ void setup() {
     tft.initR(INITR_MINI160x80_PLUGIN);  // Init ST7735S mini display
     tft.setRotation(3);
     
-    /*
-    // prove
-    tft.fillScreen(BLACK);
-    tft.setTextSize(2);
-    tft.setCursor(0, 0);
-    tft.setTextColor(RED);
-    tft.println("TEST DI PROVA");
-    delay (1000);
-    tft.setCursor(0, 20);
-    tft.setTextColor(GRAY);
-    tft.println("Displ. ST7735");
-    tft.setTextColor(BLUE);
-    tft.setCursor(15, 40);
-    tft.println("160x80 RGB");
-    delay (500);
-    tft.setTextSize(1);
-    tft.setCursor(30, 70);
-    tft.setTextColor(GREEN);
-    tft.println("WWW.ADRIROBOT.IT");
-    delay (1000);
-    */
     // logo OpenFire
     tft.fillScreen(BLACK);
     tft.drawBitmap(40, 0, customSplashBanner, CUSTSPLASHBANN_WIDTH, CUSTSPLASHBANN_HEIGHT, BLUE); // logo tondo
@@ -135,45 +88,19 @@ void setup() {
   SerialWireless.connection_dongle();
   // ====== fine gestione wireless .. va avanti solo dopo che si è accoppiato il dispositivo =======
 
-
   // ====== connessione USB ====== imposta VID e PID come quello che gli passa la pistola ===============
   if (!TinyUSBDevice.isInitialized()) { // aggiunto ..funzionava lo stesso, ma così è più sicuro .. sicuramente serve per Esp32 con libreria non integrfata nel core
     TinyUSBDevice.begin(0);
   }
-  
-  //SerialWireless.begin();
-  //SerialWireless.connection_dongle();
-  
-  //TinyUSBDevice.setLanguageDescriptor(0); // per impostare lingua - utile ???? default è inglese
-  //TinyUSBDevice.setManufacturerDescriptor(MANUFACTURER_NAME);
-  //TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
-  //TinyUSBDevice.setID(DEVICE_VID, DEVICE_PID);
-  //TinyUSBDevice.setSerialDescriptor(SERIAL_DESCRIPTION); // ??? può essere utile per distinguere dispositivi con stesso VID e PID   
-
-  
+      
   TinyUSBDevice.setManufacturerDescriptor(usb_data_wireless.deviceManufacturer);
   TinyUSBDevice.setProductDescriptor(usb_data_wireless.deviceName);
   TinyUSBDevice.setID(usb_data_wireless.deviceVID, usb_data_wireless.devicePID);
-  
-
-  
-
-
-  //TinyUSBDevice.setManufacturerDescriptor(MANUFACTURER_NAME);
-  //TinyUSBDevice.setProductDescriptor(DEVICE_NAME);
-  //TinyUSBDevice.setID(DEVICE_VID, DEVICE_PID);   
-  //TinyUSBDevice.setSerialDescriptor(usb_data_wireless.deviceSerial); // ??? può essere utile per distinguere dispositivi con stesso VID e PID   
-  
-
-
 
   // Initializing the USB devices chunk.
   TinyUSBDevices.begin(1); 
   // ====== fine connessione USB ==========================================================================
-
-  //SerialWireless.begin();
-  //SerialWireless.connection_dongle();
-
+  
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
     tft.fillScreen(BLACK);
     tft.setTextSize(2);
@@ -192,24 +119,6 @@ void setup() {
     tft.printf("Channel: %d", usb_data_wireless.channel);
 
   #endif // DEVICE_LILYGO_T_DONGLE_S3
-
-  #ifdef COMMENTO
-  Serial.println("");
-  Serial.println("DATI DELLA GUN");
-  Serial.print("Manufacturer: ");
-  Serial.println(usb_data_wireless.deviceManufacturer);
-  Serial.print("Name: ");
-  Serial.println(usb_data_wireless.deviceName);
-  Serial.print("VID: ");
-  Serial.println(usb_data_wireless.deviceVID);
-  Serial.print("PID: ");
-  Serial.println(usb_data_wireless.devicePID);
-  Serial.print("PLAYER: ");
-  Serial.println(usb_data_wireless.devicePlayer);
-  Serial.print("CHANNEL: ");
-  Serial.println(usb_data_wireless.channel);
-#endif // COMMENTO
-
 }
 
 #define FIFO_SIZE_READ_SER 200  // l'originale era 32
