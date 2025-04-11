@@ -156,6 +156,16 @@ unsigned long startTime = 0; // = millis();
 
 void loop()
 {
+   
+  SerialWireless.lenBufferSerialWrite = Serial.available();
+  if (SerialWireless.lenBufferSerialWrite) {
+    if (SerialWireless.lenBufferSerialWrite > FIFO_SIZE_WRITE_SERIAL) SerialWireless.lenBufferSerialWrite = FIFO_SIZE_WRITE_SERIAL;
+    Serial.readBytes(SerialWireless.bufferSerialWrite, SerialWireless.lenBufferSerialWrite);
+    SerialWireless.flush();
+  }
+
+
+#ifdef COMMENTO  
   if (Serial.available() > rx_avalaible) {
     startTime = millis();
     rx_avalaible = Serial.available();
@@ -167,4 +177,5 @@ void loop()
     SerialWireless.flush();
     rx_avalaible = 0;
   } 
+#endif //COMMENTO
 }
