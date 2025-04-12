@@ -120,7 +120,10 @@ void setup() {
   TinyUSBDevice.setID(usb_data_wireless.deviceVID, usb_data_wireless.devicePID);
 
   // Initializing the USB devices chunk.
-  TinyUSBDevices.begin(1); 
+  TinyUSBDevices.begin(1);
+  Serial.begin(9600);
+  Serial.setTimeout(0);
+  Serial.setTxTimeoutMs(0);
   // ====== fine connessione USB ==========================================================================
   
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
