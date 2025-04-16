@@ -152,21 +152,56 @@ void setup() {
 }
 
 #define FIFO_SIZE_READ_SER 200  // l'originale era 32
-#define TIME_OUT_AVALAIBLE 3
+#define TIME_OUT_AVALAIBLE 2
+#define TIME_OUT_SERIAL_MICRO 1000 // 1000 microsecondi = 1 millisecondo
 
 int rx_avalaible = 0;
 unsigned long startTime = 0; // = millis();
 
+uint64_t timer_serial_micro = 0;
+
+//uint16_t len_aux;
+uint8_t buffer_aux[FIFO_SIZE_READ_SER];
 void loop()
 {
-   
+  
+  //micros();
+  //esp_timer_get_time();
+  if (esp_timer_get_time() - timer_serial_micro > TIME_OUT_SERIAL_MICRO) // controlla ogni millisecondo più o meno a 9600 bps
+  {
+  if (Serial.available() > rx_avalaible) {
+    startTime = millis();
+    rx_avalaible = Serial.available();
+  }     
+  if (rx_avalaible && (millis() > startTime + TIME_OUT_AVALAIBLE)) { 
+    if (rx_avalaible > FIFO_SIZE_READ_SER) rx_avalaible = FIFO_SIZE_READ_SER;
+    Serial.readBytes(buffer_aux, rx_avalaible);
+    SerialWireless.write(buffer_aux, rx_avalaible);
+    //SerialWireless.lenBufferSerialWrite = rx_avalaible;
+    //SerialWireless.flush();
+    rx_avalaible = 0;
+  } 
+  timer_serial_micro = esp_timer_get_time();
+}
+
+
+  /*
+  len_aux = Serial.available();
+  if (len_aux) {
+    if (len_aux > FIFO_SIZE_WRITE_SERIAL) len_aux = FIFO_SIZE_WRITE_SERIAL;
+    Serial.readBytes(buffer_aux, len_aux);
+    SerialWireless.write(buffer_aux,len_aux);
+  }
+  */
+
+  /*
   SerialWireless.lenBufferSerialWrite = Serial.available();
   if (SerialWireless.lenBufferSerialWrite) {
     if (SerialWireless.lenBufferSerialWrite > FIFO_SIZE_WRITE_SERIAL) SerialWireless.lenBufferSerialWrite = FIFO_SIZE_WRITE_SERIAL;
     Serial.readBytes(SerialWireless.bufferSerialWrite, SerialWireless.lenBufferSerialWrite);
     SerialWireless.flush();
   }
-
+  */
 
 #ifdef COMMENTO  
   if (Serial.available() > rx_avalaible) {
