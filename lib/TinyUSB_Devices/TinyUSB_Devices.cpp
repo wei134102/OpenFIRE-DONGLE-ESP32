@@ -12,9 +12,10 @@
 #endif
 
 #include "TinyUSB_Devices.h"
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W) && defined(ENABLE_CLASSIC)
-#include <HID_Bluetooth.h>
-#include <PicoBluetoothHID.h>
+
+#if defined(PIO_FRAMEWORK_ARDUINO_ENABLE_BLUETOOTH) && defined(ARDUINO_RASPBERRY_PI_PICO_W) && defined(ENABLE_CLASSIC)  
+  #include <HID_Bluetooth.h>
+  #include <PicoBluetoothHID.h>
 #endif // ARDUINO_RASPBERRY_PI_PICO_W
 
 /*****************************
@@ -22,6 +23,7 @@
  *****************************/
 Adafruit_USBD_HID usbHid;
 
+#ifdef COMMENTO
 /* // 696969 spostato in TinyUSB_Devices
 enum HID_RID_e{
   HID_RID_KEYBOARD = 1,
@@ -35,8 +37,9 @@ uint8_t const desc_hid_report[] = {
   TUD_HID_REPORT_DESC_GAMEPAD16(HID_REPORT_ID(HID_RID_e::HID_RID_GAMEPAD))
 };
 */
+#endif // COMMENTO
 
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W) && defined(ENABLE_CLASSIC)
+#if defined(PIO_FRAMEWORK_ARDUINO_ENABLE_BLUETOOTH) && defined(ARDUINO_RASPBERRY_PI_PICO_W) && defined(ENABLE_CLASSIC)
 enum HID_BT_e {
     HID_BT_KEYBOARD = 1,
     HID_BT_MOUSE,  // 2
@@ -50,10 +53,7 @@ uint8_t desc_bt_report[] = {
 };
 #endif // ARDUINO_RASPBERRY_PI_PICO_W
 
-TinyUSBDevices_::TinyUSBDevices_(void) {
-}
-
-void TinyUSBDevices_::begin(byte polRate) {
+void TinyUSBDevices_::begin(int polRate) {
     usbHid.setPollInterval(polRate);
     usbHid.setReportDescriptor(desc_hid_report, sizeof(desc_hid_report));
     usbHid.begin();
@@ -66,7 +66,7 @@ void TinyUSBDevices_::begin(byte polRate) {
     onBattery = false;
 }
 
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W) && defined(ENABLE_CLASSIC)
+#if defined(PIO_FRAMEWORK_ARDUINO_ENABLE_BLUETOOTH) && defined(ARDUINO_RASPBERRY_PI_PICO_W) && defined(ENABLE_CLASSIC)
 void TinyUSBDevices_::beginBT(const char *localName, const char *hidName) {
     // third arg is the type of device that this is exposed as, i.e. the icon displayed on the PC.
     // for BLE: 0x03C2 is mouse, 0x03C1 is keyboard, 0x03C4 is gamepad, 0x03C0 is "generic" bluetooth icon
@@ -85,7 +85,7 @@ TinyUSBDevices_ TinyUSBDevices;
 
 AbsMouse5_::AbsMouse5_() {}
 
-void AbsMouse5_::report_absmouse5(void)
+void AbsMouse5_::report(void)
 {
   if(!TinyUSBDevices.onBattery) {
     while(!usbHid.ready()) yield();  
@@ -118,14 +118,14 @@ void AbsMouse5_::report_absmouse5(void)
     }  
   }
   #endif //OPENFIRE_WIRELESS_ENABLE
-
+  TinyUSBDevices.newReport[TinyUSBDevices_::reportMouse] = false;
 }
 
 void AbsMouse5_::move_wheel_pan(int8_t wheel, int8_t pan) {
   if(pan != absmouse5Report.pan || wheel != absmouse5Report.wheel) {
 		absmouse5Report.wheel = wheel;
     absmouse5Report.pan = pan;
-		report_absmouse5();
+		report();
 
   }
 }
@@ -135,34 +135,41 @@ void AbsMouse5_::move(int16_t x, int16_t y)
 	if(x != absmouse5Report.x || y != absmouse5Report.y) {
 		absmouse5Report.x = x;
 		absmouse5Report.y = y;
-	  report_absmouse5();
+    TinyUSBDevices.newReport[TinyUSBDevices_::reportMouse] = true;
+	  //report();
 		
 	}
 }
 
 void AbsMouse5_::press(uint8_t button)
 {
-	absmouse5Report.buttons |= button;
-	report_absmouse5();
+	if(!(absmouse5Report.buttons & button)) {
+    absmouse5Report.buttons |= button;
+    TinyUSBDevices.newReport[TinyUSBDevices_::reportMouse] = true;
+	  //report();
+  }
 }
 
 void AbsMouse5_::release(uint8_t button)
 {
-	absmouse5Report.buttons &= ~button;
-	report_absmouse5();
+	if(absmouse5Report.buttons & button) {
+    absmouse5Report.buttons &= ~button;
+	  TinyUSBDevices.newReport[TinyUSBDevices_::reportMouse] = true;
+    //report();
+  }
 }
 
 void AbsMouse5_::click(uint8_t b) {
   absmouse5Report.buttons = b;
-  report_absmouse5();
+  report();
   absmouse5Report.buttons = 0;
-  report_absmouse5();
+  report();
 }
 
 void AbsMouse5_::buttons(uint8_t b) {
   if (b != absmouse5Report.buttons) {
     absmouse5Report.buttons = b;
-    report_absmouse5();
+    report();
   }
 }
 
@@ -181,7 +188,7 @@ AbsMouse5_ AbsMouse5;
 Keyboard_::Keyboard_(void) {}
   
 
-void Keyboard_::report_keyboard(void) 
+void Keyboard_::report(void) 
 {
   if(!TinyUSBDevices.onBattery) {
     if (TinyUSBDevice.suspended())  { TinyUSBDevice.remoteWakeup(); }
@@ -216,7 +223,7 @@ void Keyboard_::report_keyboard(void)
     }  
   }
   #endif //OPENFIRE_WIRELESS_ENABLE
-
+  TinyUSBDevices.newReport[TinyUSBDevices_::reportKeyboard] = false;
 }
  
 size_t Keyboard_::press(uint8_t k)
@@ -273,8 +280,8 @@ size_t Keyboard_::press(uint8_t k)
     //not a modifier and not a key
     return 0;
   }
-
-	report_keyboard();
+  TinyUSBDevices.newReport[TinyUSBDevices_::reportKeyboard] = true;
+	//report();
 	return 1;
 }
   
@@ -317,8 +324,8 @@ size_t Keyboard_::release(uint8_t k)
 		  }
 	  }
   }
- 	
-  report_keyboard();
+  TinyUSBDevices.newReport[TinyUSBDevices_::reportKeyboard] = true;
+  //report();
 	return 1;
 }
   
@@ -326,7 +333,8 @@ void Keyboard_::releaseAll(void)
 {
   tu_memclr(&_keyReport.keycode, 6);
   _keyReport.modifier = 0;
-  report_keyboard();
+  TinyUSBDevices.newReport[TinyUSBDevices_::reportKeyboard] = true;
+  //report();
 }
   
 size_t Keyboard_::write(uint8_t c)
@@ -368,7 +376,8 @@ void Gamepad16_::moveCam(uint16_t origX, uint16_t origY) {
       gamepad16Report.rx = map(origX, 0, 32767, -32767, 32767);
       gamepad16Report.ry = map(origY, 0, 32767, -32767, 32767);
   }
-  report_gamepad16(); 
+  TinyUSBDevices.newReport[TinyUSBDevices_::reportGamepad] = true;
+  //report(); 
 }
 
 void Gamepad16_::moveStick(uint16_t origX, uint16_t origY) {
@@ -382,36 +391,36 @@ void Gamepad16_::moveStick(uint16_t origX, uint16_t origY) {
       gamepad16Report.x = map(_x, 0, 4095, 32767, -32767);
       gamepad16Report.x = map(_y, 0, 4095, 32767, -32767);
     }
-    report_gamepad16();
+    TinyUSBDevices.newReport[TinyUSBDevices_::reportGamepad] = true;
+    //report();
   }
 }
 
 void Gamepad16_::press(uint8_t buttonNum) {
-  bitSet(gamepad16Report.buttons, buttonNum);
-  report_gamepad16();
+  if(!(gamepad16Report.buttons & (1 << buttonNum))) {
+    bitSet(gamepad16Report.buttons, buttonNum);
+    TinyUSBDevices.newReport[TinyUSBDevices_::reportGamepad] = true;
+    //report();
+  }
 }
 
 void Gamepad16_::release(uint8_t buttonNum) {
-  bitClear(gamepad16Report.buttons, buttonNum);
-  report_gamepad16();
+  if(gamepad16Report.buttons & (1 << buttonNum)) {
+    bitClear(gamepad16Report.buttons, buttonNum);
+    TinyUSBDevices.newReport[TinyUSBDevices_::reportGamepad] = true;
+    //report();
+  }
 }
 
 void Gamepad16_::padUpdate(uint8_t padMask) {
-  gamepad16Report.hat = padMask;
-  report_gamepad16();
+  if(gamepad16Report.hat != padMask) {
+    gamepad16Report.hat = padMask;
+    TinyUSBDevices.newReport[TinyUSBDevices_::reportGamepad] = true;
+    //report();
+  }
 }
 
-void Gamepad16_::releaseAll() {
-  gamepad16Report.buttons = 0;
-  gamepad16Report.hat = 0;
-  gamepad16Report.x = 0;
-  gamepad16Report.y = 0;
-  gamepad16Report.rx = 0;
-  gamepad16Report.ry = 0;
-  report_gamepad16();
-}
-
-void Gamepad16_::report_gamepad16()
+void Gamepad16_::report()
 {  
   if(!TinyUSBDevices.onBattery) {
     if (TinyUSBDevice.suspended())  { TinyUSBDevice.remoteWakeup(); }
@@ -446,7 +455,15 @@ void Gamepad16_::report_gamepad16()
     }  
   }
   #endif // OPENFIRE_WIRELESS_ENABLE
-
+  TinyUSBDevices.newReport[TinyUSBDevices_::reportGamepad] = false;
 }
+
+void Gamepad16_::releaseAll() {
+  tu_memclr(&gamepad16Report, sizeof(gamepad16Report));
+  _x = 2048, _y = 2048;
+  TinyUSBDevices.newReport[TinyUSBDevices_::reportGamepad] = true;
+  //report();
+}
+
 
   Gamepad16_ Gamepad16;

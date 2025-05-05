@@ -10,7 +10,7 @@
 
 
 
-#define ESPNOW_WIFI_CHANNEL_DEFAULT 4
+#define ESPNOW_WIFI_CHANNEL_DEFAULT 12
 
 // la potenza di trasmissione può andare da 8 a 84, dove 84 è il valore massimo che corrisponde a 20 db
 #define ESPNOW_WIFI_POWER_DEFAULT 84 
@@ -133,6 +133,8 @@ bool SerialWireless_::checkForRxPacket() {
   uint8_t dato;
   for (uint16_t i = 0; i<numAvailableBin; i++) {
     dato = (uint8_t) readBin();
+    if (dato == START_BYTE) packet.reset(); //resetta inizio pacchetto - // controllo dato .. se è uguale a packet::start_byte .. azzera tutto e fai partire da capo altrimenti
+    // controllo dato .. se è uguale a packet::start_byte .. azzera tutto e fai partire da capo altrimenti (usare secondo parametro parse ?)
     packet.parse(dato, true);
   }
   return true;
@@ -168,8 +170,8 @@ int SerialWireless_::availableForWriteBin() {
 }
 
 // decidere se controllare se è vuoto anche il buffer_bin
-void SerialWireless_::flush() { // è bloccante e non esce fino a quando il buffer di uscita è completamente vuoto
-  while (lenBufferSerialWrite || _writeLen) {
+void SerialWireless_::flush() { // è bloccante e non esce fino a quando il buffer di uscita è completamente vuoto // in virtual com con TinyUISB non è bloccante .. invia il pacchetto più grande che può e ritorna
+  //while (lenBufferSerialWrite || _writeLen) { // non è bloccante in USB CDC, forza solo l'inmvio di quello che c'è nel buffer
     if (lenBufferSerialWrite) {
     if (availableForWriteBin() > (lenBufferSerialWrite + PREAMBLE_SIZE + POSTAMBLE_SIZE)) {
         memcpy(&packet.txBuff[PREAMBLE_SIZE], bufferSerialWrite, lenBufferSerialWrite);
@@ -179,7 +181,7 @@ void SerialWireless_::flush() { // è bloccante e non esce fino a quando il buff
     }
     }
     SendData(); // try a send
-  }
+  //}
 }
 
 void SerialWireless_::flushBin() { // mai usata
@@ -197,23 +199,29 @@ void SerialWireless_::SendData() {
     }
     if (xSemaphoreTake(tx_sem, 0) == pdTRUE) {
       esp_err_t result = esp_now_send(peerAddress, buffer_espnow, len_tx);
+      
+      //readIndex += len_tx; 
+      //if (readIndex >= BUFFER_SIZE) { readIndex -= BUFFER_SIZE; }
+      //_writeLen -= len_tx;  
+
+
       if (result == ESP_OK) {
         readIndex += len_tx; 
         if (readIndex >= BUFFER_SIZE) { readIndex -= BUFFER_SIZE; }
         _writeLen -= len_tx;  
       } else if (result == ESP_ERR_ESPNOW_NOT_INIT) {
-        Serial.println("ESPNOW not init.");
+        //Serial.println("ESPNOW not init.");
       } else if (result == ESP_ERR_ESPNOW_ARG) {
-        Serial.println("Invalid argument");
+        //Serial.println("Invalid argument");
       } else if (result == ESP_ERR_ESPNOW_INTERNAL) {
-        Serial.println("Internal Error");
+        //Serial.println("Internal Error");
       } else if (result == ESP_ERR_ESPNOW_NO_MEM) {
-        Serial.println("Our of memory");
+        //Serial.println("Our of memory");
       } else if (result == ESP_ERR_ESPNOW_NOT_FOUND) {
-        Serial.println("Peer not found.");
+        //Serial.println("Peer not found.");
       } else if (result == ESP_ERR_ESPNOW_IF) {
-        Serial.println("Interface does not match.");
-      } else Serial.println("Errore sconosciuto");
+        //Serial.println("Interface does not match.");
+      } //  else Serial.println("Errore sconosciuto");
     }
   }
 }
@@ -235,14 +243,17 @@ size_t SerialWireless_::write(const uint8_t *data, size_t len) { // deve essere 
       lenBufferSerialWrite += len;
       aux_tx = false;
     }
-    //flush();
+    //flush(); // in effetti si può mettere flush al posto dell'if sottostante .. verificare bene
     // =================
+    flush(); // verificare bene
+    /*
     if (availableForWriteBin() > (lenBufferSerialWrite + PREAMBLE_SIZE + POSTAMBLE_SIZE)) {
       memcpy(&packet.txBuff[PREAMBLE_SIZE], bufferSerialWrite, lenBufferSerialWrite);
       packet.constructPacket(lenBufferSerialWrite, PACKET_TX::SERIAL_TX);
       writeBin(packet.txBuff, lenBufferSerialWrite + PREAMBLE_SIZE+POSTAMBLE_SIZE);
       lenBufferSerialWrite = 0;
     }
+    */
     SendData(); // try a send
   } while (aux_tx);
   // =================
@@ -267,7 +278,7 @@ size_t SerialWireless_::writeBin(const uint8_t *data, size_t len) {
   }
   else {
     _overflow_write = true;
-    Serial.println("Overflow nello scrivere nel BUFFER scrittura");
+    //Serial.println("Overflow nello scrivere nel BUFFER scrittura");
     return 0;
   }
 }
@@ -298,7 +309,7 @@ void SerialWireless_::write_on_rx_serialBuffer(const uint8_t *data, int len) {
   }
   else {
     _overflow_bufferSerialRead = true;
-    Serial.println("Overflow nello scrivere nel BUFFER lettura del SERIAL BUFFER");
+    //Serial.println("Overflow nello scrivere nel BUFFER lettura del SERIAL BUFFER");
   }
 }
 
@@ -537,6 +548,15 @@ bool SerialWireless_::connection_gun_at_last_dongle() {
   }
   if (stato_connessione_wireless == CONNECTION_STATE::DEVICES_CONNECTED_WITH_LAST_DONGLE) {    
     stato_connessione_wireless = CONNECTION_STATE::DEVICES_CONNECTED;
+    
+    // ================ aggiunto =============================
+    /*
+    if (esp_now_del_peer(peerAddress) != ESP_OK) {  // cancella il broadcast dai peer
+      Serial.println("Errore nella cancellazione del peer");
+    }
+    */
+    // =============================================
+
     TinyUSBDevices.onBattery = true;
     return true;
   } else {
@@ -586,6 +606,9 @@ bool SerialWireless_::connection_gun() {
     if (esp_now_del_peer(peerAddress) != ESP_OK) {  // cancella il broadcast dai peer
       Serial.println("Errore nella cancellazione del peer");
     }
+    
+    // =============== tolto ===========================
+    
     memcpy(peerAddress, mac_esp_another_card, 6);
     memcpy(peerInfo.peer_addr, peerAddress, 6);
     //peerInfo.channel = ESPNOW_WIFI_CHANNEL;
@@ -593,6 +616,9 @@ bool SerialWireless_::connection_gun() {
     if (esp_now_add_peer(&peerInfo) != ESP_OK) {  // inserisce il dongle nei peer
       Serial.println("Errore nell'aggiunta del nuovo peer");
     }                       
+    
+    // =========================================
+    
     TinyUSBDevices.onBattery = true;
     return true;
   }
@@ -627,7 +653,18 @@ void packet_callback_read_dongle() {
               aux_buffer[0] = CONNECTION_STATE::TX_CONFERM_CONNECTION_LAST_DONGLE; 
               memcpy(&aux_buffer[1], SerialWireless.mac_esp_inteface, 6);
               memcpy(&aux_buffer[7], peerAddress, 6);
-              SerialWireless.SendPacket((const uint8_t *)aux_buffer, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
+              // valutare se inviarlo un paio di volte il pacchetto o solo una volta
+              // lo invia 3 volte - una volta ogni 70ms
+              for (uint8_t i = 0; i<3; i++) {
+                if (i>0) {
+                  //vTaskDelay(pdMS_TO_TICKS(1000)); // equivalente a delay(1000) ma non bloccante su esp32
+                  unsigned long lastMillis_tx_packet_connection_last_dongle = millis();
+                  while ((millis() - lastMillis_tx_packet_connection_last_dongle) < 70) yield(); 
+                }
+                SerialWireless.SendPacket((const uint8_t *)aux_buffer, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
+              }
+              // pachhetto da inviare
+              ///////SerialWireless.SendPacket((const uint8_t *)aux_buffer, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
         }
         break;
       default:
@@ -747,9 +784,42 @@ void packet_callback_read_gun() {
               memcpy(&aux_buffer[13], &usb_data_wireless, sizeof(usb_data_wireless));
 
               // =========================================================
+              // INVIARE IL PACCHETTO FINALE PIU' VOLTE  
+              // =========================================================
+
+              //vTaskDelay(pdMS_TO_TICKS(1000)); // equivalente a delay(1000) ma non bloccante su esp32
+
+              //unsigned long lastMillis_tx_packet_gun_to_dongle_conferm = millis();
+              // invia il pacchetto di avvenuta connessione  3 volte - un pacchetto ogni 70ms
+              for (uint8_t i = 0; i<3; i++) {
+                if (i>0) {
+                  //vTaskDelay(pdMS_TO_TICKS(1000)); // equivalente a delay(1000) ma non bloccante su esp32
+                  unsigned long lastMillis_tx_packet_gun_to_dongle_conferm = millis();
+                  while ((millis() - lastMillis_tx_packet_gun_to_dongle_conferm) < 70) yield(); 
+                  //lastMillis_tx_packet_gun_to_dongle_conferm = millis();
+                }
+                SerialWireless.SendPacket((const uint8_t *)aux_buffer, sizeof(aux_buffer), PACKET_TX::CONNECTION);
+              }
+
+              /*
+              while (!TinyUSBDevice.mounted() && 
+                     (stato_connessione_wireless != CONNECTION_STATE::DEVICES_CONNECTED_WITH_LAST_DONGLE) &&
+                     ((millis() - lastMillis_start_dialogue_last_dongle) < TIMEOUT_DIALOGUE_LAST_DONGLE)) { 
+                  if ((millis() - lastMillis_tx_packet_last_dongle) > TIMEOUT_TX_PACKET_LAST_DONGLE)
+                  {
+                    // INSERIRE CHIAMATA INVIO PACCHETTO
+                    SerialWireless.SendPacket((const uint8_t *)aux_buffer, sizeof(aux_buffer), PACKET_TX::CONNECTION);
+                    lastMillis_tx_packet_last_dongle = millis();
+                  }
+                yield();
+              }
+              */
 
 
-              SerialWireless.SendPacket((const uint8_t *)aux_buffer, sizeof(aux_buffer), PACKET_TX::CONNECTION);
+
+
+              // PACCHETO DA INVIARE
+              ////////////SerialWireless.SendPacket((const uint8_t *)aux_buffer, sizeof(aux_buffer), PACKET_TX::CONNECTION);
               
               // assicurati che i dati siano stati spediti
 
@@ -785,7 +855,7 @@ static void _esp_now_rx_cb(const esp_now_recv_info_t *info, const uint8_t *data,
   }
   else {
     SerialWireless._overflow_read = true;
-    Serial.println("Overflow nello scrivere nel BUFFER lettura");
+    //Serial.println("Overflow nello scrivere nel BUFFER lettura");
   }
   SerialWireless.checkForRxPacket();
 }
