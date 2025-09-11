@@ -10,7 +10,7 @@
 
 
 
-#define ESPNOW_WIFI_CHANNEL_DEFAULT 12
+#define ESPNOW_WIFI_CHANNEL_DEFAULT 8//12
 
 // la potenza di trasmissione può andare da 8 a 84, dove 84 è il valore massimo che corrisponde a 20 db
 #define ESPNOW_WIFI_POWER_DEFAULT 84 

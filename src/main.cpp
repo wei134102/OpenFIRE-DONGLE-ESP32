@@ -5,6 +5,19 @@
 
 #include "TinyUSB_Devices.h"
 
+#if defined(USES_OLED_DISPLAY)
+  #include <Wire.h>
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_SSD1306.h>
+  #include <WiFi.h>
+  
+  #define SCREEN_WIDTH 128 // OLED显示屏宽度，单位：像素
+  #define SCREEN_HEIGHT 64 // OLED显示屏高度，单位：像素
+  #define OLED_RESET    -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+  
+  Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#endif
+
 #if defined(DEVICE_LILYGO_T_DONGLE_S3)
   #include "logo.h"
   #include "pin_config_DONGLE.h"
@@ -56,6 +69,48 @@ void setup() {
     !ARDUINO_RUNNING_CORE); /* pin task to core 0 */
   #endif
   // ======================== FINE X GESTIONE DUAL CORE =================================       
+  
+  #if defined(USES_OLED_DISPLAY)
+    // 初始化OLED显示屏
+    Wire.begin(OLED_SDA, OLED_SCL);
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // 地址0x3C适用于128x64
+      Serial.println(F("SSD1306初始化失败"));
+    }
+    
+    // 初始化WiFi以获取MAC地址
+    WiFi.mode(WIFI_MODE_STA);
+    WiFi.disconnect();
+    delay(100);
+    
+    // 获取MAC地址
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA); // 直接从ESP-IDF获取MAC地址
+    char macStr[18];
+    sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println(F("OpenFIRE DONGLE"));
+    display.println(F("Version: "));
+    display.print(OPENFIRE_DONGLE_VERSION);
+    display.print(" ");
+    display.println(OPENFIRE_DONGLE_CODENAME);
+    display.println(F("MAC Address:"));
+    display.println(macStr);
+    display.display();
+    delay(3000);
+    
+    // 显示搜索信息
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Searching..."));
+    display.println(F("Waiting for device"));
+    display.println(F("MAC: "));
+    display.println(macStr);
+    display.display();
+  #endif
  
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
     pinMode(TFT_LEDA_PIN, OUTPUT);
@@ -107,7 +162,28 @@ void setup() {
 
   // ====== gestione connessione wireless ====================
   SerialWireless.begin();
+  
+  #if defined(USES_OLED_DISPLAY)
+    // 显示正在配对
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Pairing..."));
+    display.println(F("Scanning channels"));
+    display.display();
+  #endif
+  
   SerialWireless.connection_dongle();
+  
+  #if defined(USES_OLED_DISPLAY)
+    // 显示配对成功
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Pairing Success!"));
+    display.println(F("Channel: "));
+    display.println(usb_data_wireless.channel);
+    display.display();
+    delay(1000);
+  #endif
   // ====== fine gestione wireless .. va avanti solo dopo che si è accoppiato il dispositivo =======
 
   // ====== connessione USB ====== imposta VID e PID come quello che gli passa la pistola ===============
@@ -149,6 +225,22 @@ void setup() {
     tft.printf("Channel: %d", usb_data_wireless.channel);
 
   #endif // DEVICE_LILYGO_T_DONGLE_S3
+  
+  #if defined(USES_OLED_DISPLAY)
+    // 显示连接信息
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Connected!"));
+    display.println(F("Device: "));
+    display.println(usb_data_wireless.deviceName);
+    display.println(F("Player: "));
+    display.println(usb_data_wireless.devicePlayer);
+    display.println(F("Channel: "));
+    display.println(usb_data_wireless.channel);
+    display.println(F("MAC: "));
+    display.println(macStr); // 使用之前声明的macStr变量
+    display.display();
+  #endif
 }
 
 #define FIFO_SIZE_READ_SER 200  // l'originale era 32
