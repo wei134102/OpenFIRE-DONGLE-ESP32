@@ -452,9 +452,9 @@ bool SerialWireless_::connection_dongle() {
   #endif
 
   uint8_t channel = espnow_wifi_channel;   // tra e 1 e 13 (il 14 dovrebbe essere riservato)
-  #define TIMEOUT_TX_PACKET 500 // in millisecondi
-  #define TIMEOUT_CHANGE_CHANNEL 2000 // in millisecondi - cambia canale ogni
-  #define TIMEOUT_DIALOGUE 6000 // in millisecondi - tempo massimo per completare operazione accoppiamento
+  #define TIMEOUT_TX_PACKET 1000 // in millisecondi
+  #define TIMEOUT_CHANGE_CHANNEL 10000 // in millisecondi - cambia canale ogni 10 secondi
+  #define TIMEOUT_DIALOGUE 30000 // in millisecondi - tempo massimo per completare operazione accoppiamento
   unsigned long lastMillis_tx_packet = millis ();
   unsigned long lastMillis_change_channel = millis ();
   unsigned long lastMillis_start_dialogue = millis ();
