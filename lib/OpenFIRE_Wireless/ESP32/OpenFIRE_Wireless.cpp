@@ -442,6 +442,14 @@ bool SerialWireless_::end() {
 }
 
 bool SerialWireless_::connection_dongle() {
+  #if defined(USES_OLED_DISPLAY)
+    // 初始化显示扫描信息
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.println(F("Starting Scan..."));
+    display.display();
+    delay(500);
+  #endif
 
   uint8_t channel = espnow_wifi_channel;   // tra e 1 e 13 (il 14 dovrebbe essere riservato)
   #define TIMEOUT_TX_PACKET 500 // in millisecondi
@@ -474,6 +482,19 @@ bool SerialWireless_::connection_dongle() {
          ((millis() - (lastMillis_tx_packet-50))) > TIMEOUT_TX_PACKET) {  // aggiunta impostato 50 ms come margine, per evitare che quando invia pacchetto cambi subito casnale senza dare possibilità risposta
         channel++;
         if (channel >13) channel = 1;
+        
+        #if defined(USES_OLED_DISPLAY)
+          // 更新信道扫描显示
+          display.clearDisplay();
+          display.setCursor(0, 0);
+          display.println(F("Scanning Channels"));
+          display.print(F("Current CH: "));
+          display.println(channel);
+          display.print(F("Progress: "));
+          display.print(channel * 100 / 13);
+          display.println("%");
+          display.display();
+        #endif
         
         #if defined(DEVICE_LILYGO_T_DONGLE_S3)
           tft.fillRect(95,60,50,20,0/*BLACK*/);  

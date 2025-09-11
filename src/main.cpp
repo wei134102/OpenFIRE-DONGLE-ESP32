@@ -57,6 +57,39 @@
 
 // The main show!
 void setup() {
+  // 初始化OLED显示
+  #if defined(USES_OLED_DISPLAY)
+    // 声明变量（函数作用域）
+    uint8_t mac[6];
+    char macStr[18];
+    
+    // 初始化OLED
+    Wire.begin(OLED_SDA, OLED_SCL);
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+      Serial.println(F("SSD1306初始化失败"));
+    }
+    
+    // 获取并显示MAC地址（变量已在文件开头声明）
+    WiFi.mode(WIFI_MODE_STA);
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X", 
+           mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    // 显示启动信息
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println(F("OpenFIRE DONGLE"));
+    display.println(F("Version: "));
+    display.print(OPENFIRE_DONGLE_VERSION);
+    display.print(" ");
+    display.println(OPENFIRE_DONGLE_CODENAME);
+    display.println(F("Dongle MAC:"));
+    display.println(macStr);
+    display.display();
+    delay(2000);
+  #endif
   // =========================== X GESTIONE DUAL CORE =============================== 
   #if defined(DUAL_CORE) && defined(ESP_PLATFORM) && false
     xTaskCreatePinnedToCore(
@@ -72,20 +105,17 @@ void setup() {
   
   #if defined(USES_OLED_DISPLAY)
     // 初始化OLED显示屏
-    Wire.begin(OLED_SDA, OLED_SCL);
+    // 注意：Wire.begin已经在前面调用过，不需要重复调用
     if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // 地址0x3C适用于128x64
       Serial.println(F("SSD1306初始化失败"));
     }
-    
     // 初始化WiFi以获取MAC地址
     WiFi.mode(WIFI_MODE_STA);
     WiFi.disconnect();
     delay(100);
     
-    // 获取MAC地址
-    uint8_t mac[6];
+    // 获取MAC地址 - 使用之前声明的变量
     esp_read_mac(mac, ESP_MAC_WIFI_STA); // 直接从ESP-IDF获取MAC地址
-    char macStr[18];
     sprintf(macStr, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
     
     display.clearDisplay();

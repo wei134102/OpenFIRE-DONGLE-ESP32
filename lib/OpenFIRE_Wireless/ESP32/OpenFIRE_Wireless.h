@@ -45,6 +45,14 @@
 
 #if defined(OPENFIRE_WIRELESS_ENABLE) && defined(ARDUINO_ARCH_ESP32)
 
+// OLED显示支持
+#if defined(USES_OLED_DISPLAY)
+  #include <Wire.h>
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_SSD1306.h>
+  extern Adafruit_SSD1306 display; // 声明外部定义的display对象
+#endif
+
 #include <Arduino.h>
 
 
