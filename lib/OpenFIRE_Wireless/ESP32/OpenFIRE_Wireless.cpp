@@ -516,10 +516,16 @@ bool SerialWireless_::connection_dongle() {
             display.print(F("Packets: "));
             display.println(packet_count);
             
-            // 显示信号强度
+            // 显示信号强度 - 尝试直接读取WiFi RSSI作为后备方案
+            int8_t display_rssi = current_rssi;
+            if (display_rssi == 0 || display_rssi == -99) {
+              // 如果ESP-NOW回调获取的RSSI无效，尝试直接读取WiFi RSSI
+              display_rssi = WiFi.RSSI();
+            }
+            
             display.setCursor(0, 50);
             display.print(F("Signal: "));
-            display.print(current_rssi);
+            display.print(display_rssi);
             display.println(F(" dBm"));
             display.display();
           }
@@ -558,8 +564,16 @@ bool SerialWireless_::connection_dongle() {
     display.println(channel);
     display.print(F("Total packets: "));
     display.println(packet_count);
+    
+    // 显示信号强度 - 尝试直接读取WiFi RSSI作为后备方案
+    int8_t display_rssi = current_rssi;
+    if (display_rssi == 0 || display_rssi == -99) {
+      // 如果ESP-NOW回调获取的RSSI无效，尝试直接读取WiFi RSSI
+      display_rssi = WiFi.RSSI();
+    }
+    
     display.print(F("Signal: "));
-    display.print(current_rssi);
+    display.print(display_rssi);
     display.println(F(" dBm"));
     display.display();
     delay(1000);
@@ -905,8 +919,13 @@ void packet_callback_read_gun() {
 }
 
 static void _esp_now_rx_cb(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
-  // 获取并存储信号强度
-  current_rssi = info->rx_ctrl->rssi;
+  // 获取并存储信号强度 - 添加空指针检查
+  if (info && info->rx_ctrl) {
+    current_rssi = info->rx_ctrl->rssi;
+  } else {
+    // 回调被调用但无法获取RSSI，设置一个负值表示未知状态
+    current_rssi = -99;
+  }
   
   if ((FIFO_SIZE_READ - SerialWireless._readLen) >= len) {
     size_t firstChunk = FIFO_SIZE_READ - SerialWireless._writer;
