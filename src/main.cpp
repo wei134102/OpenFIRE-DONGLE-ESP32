@@ -261,11 +261,11 @@ void setup() {
     display.clearDisplay();
     display.setCursor(0, 0);
     display.println(F("Connected!"));
-    display.println(F("Device: "));
+    display.print(F("Device: "));
     display.println(usb_data_wireless.deviceName);
-    display.println(F("Player: "));
+    display.print(F("Player: "));
     display.println(usb_data_wireless.devicePlayer);
-    display.println(F("Channel: "));
+    display.print(F("Channel: "));
     display.println(usb_data_wireless.channel);
     display.println(F("MAC: "));
     display.println(macStr); // 使用之前声明的macStr变量
