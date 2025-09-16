@@ -1,7 +1,10 @@
 // by SATANASSI Alessandro
 
 #include <Arduino.h>
+#include <Preferences.h>
 
+// 创建Preferences实例
+Preferences preferences;
 
 #include "TinyUSB_Devices.h"
 #include "pin_config_DONGLE.h"
@@ -9,6 +12,11 @@
 // 声明外部变量
 extern uint8_t espnow_wifi_channel;
 extern USB_Data_GUN_Wireless usb_data_wireless;
+
+// 定义偏好设置的命名空间
+#define PREFS_NAMESPACE "OpenFIRE_Dongle"
+#define PREFS_CHANNEL_KEY "channel"
+#define DEFAULT_CHANNEL 8
 
 #if defined(USES_OLED_DISPLAY)
   #include <Wire.h>
@@ -65,6 +73,9 @@ void setup() {
   // 初始化BOOT按键引脚
   pinMode(BTN_PIN, INPUT_PULLUP);
   
+  // 初始化Preferences
+  preferences.begin(PREFS_NAMESPACE, false);
+  
   // 声明变量（函数作用域）
   uint8_t mac[6];
   char macStr[18];
@@ -96,7 +107,14 @@ void setup() {
   
   // 频段切换倒计时
   unsigned long start_time = millis();
-  uint8_t current_channel = 8; // 默认从8开始
+  // 从Preferences中读取保存的频道，如果不存在则使用默认值
+  uint8_t current_channel = preferences.getUInt(PREFS_CHANNEL_KEY, DEFAULT_CHANNEL);
+  
+  // 如果读取的频道不在有效范围内，则使用默认频道
+  if (current_channel < 1 || current_channel > 12) {
+    current_channel = DEFAULT_CHANNEL;
+  }
+  // 默认从指定频道开始
   bool button_pressed = false;
   
   while (millis() - start_time < 5000) {
@@ -162,6 +180,10 @@ void setup() {
   espnow_wifi_channel = current_channel;
   usb_data_wireless.channel = current_channel;
   
+  // 保存选择的频道到Preferences
+  preferences.putUInt(PREFS_CHANNEL_KEY, current_channel);
+  preferences.end(); // 完成后关闭Preferences
+  
   // 添加调试信息
   Serial.begin(9600);
   Serial.print("Selected channel: ");
@@ -170,6 +192,8 @@ void setup() {
   Serial.println(espnow_wifi_channel);
   Serial.print("usb_data_wireless.channel: ");
   Serial.println(usb_data_wireless.channel);
+  Serial.print("Channel saved to preferences: ");
+  Serial.println(current_channel);
   
   // 显示最终选择的频道
   #if defined(USES_OLED_DISPLAY)
