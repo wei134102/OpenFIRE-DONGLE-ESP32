@@ -326,23 +326,12 @@ void SerialWireless_::begin() {
 
   xSemaphoreGive(tx_sem);
   
-  WiFi.mode(WIFI_STA); // ??????????????????????
-  
-  /*
-  esp_err_t err = esp_wifi_start();
-  if (err != ESP_OK) {
-    log_e("WiFi not started! 0x%x)", err);
-    return false;
-  }
-  */
-
-  //WiFi.macAddress(mac_esp_inteface); // registra il mac addres della scheda
+  WiFi.mode(WIFI_STA);
 
   esp_err_t err = esp_wifi_get_mac(WIFI_IF_STA, mac_esp_inteface);
   if (err != ESP_OK) {
     Serial.println("Failed to read MAC address");
   } else {
-    // 输出格式化的MAC地址
     Serial.print("Device MAC Address: ");
     Serial.printf("%02X:%02X:%02X:%02X:%02X:%02X\n", 
                  mac_esp_inteface[0], mac_esp_inteface[1], mac_esp_inteface[2],
@@ -354,14 +343,12 @@ void SerialWireless_::begin() {
     Serial.printf("esp_wifi_set_channel failed! 0x%x", err);
   }
   
-  err = esp_wifi_set_max_tx_power(espnow_wifi_power); // tra 8 e 84 corrispondenti a 2dbm a 20 dbm);
+  err = esp_wifi_set_max_tx_power(espnow_wifi_power);
   if (err != ESP_OK) {
     Serial.printf("esp_wifi_set_max_tx_power failed! 0x%x", err);
   }
 
-  WiFi.disconnect();   // ???????????????????
-
-  delay (1000); // ??????????????????????????
+  WiFi.disconnect();
   
   err = esp_now_init();
   if (err != ESP_OK) {
@@ -456,12 +443,13 @@ bool SerialWireless_::connection_dongle() {
   #endif
 
   uint8_t channel = espnow_wifi_channel;   // 使用固定信道
-  #define TIMEOUT_TX_PACKET 1000 // in millisecondi - 每1秒发送一次，给GUN设备足够的握手时间
-  #define TIMEOUT_DIALOGUE 60000 // in millisecondi - 增加配对超时到60秒
+  #define TIMEOUT_TX_PACKET 150 // 进一步减少广播包间隔到150ms，提高响应速度
+  #define TIMEOUT_DIALOGUE 20000 // 减少超时时间到20秒
   unsigned long lastMillis_tx_packet = millis ();
   unsigned long lastMillis_start_dialogue = millis ();
   uint8_t aux_buffer_tx[13];
   uint8_t packet_count = 0;
+  uint8_t tx_power = espnow_wifi_power;
 
   
   // 设置WiFi信道为固定值
@@ -472,6 +460,9 @@ bool SerialWireless_::connection_dongle() {
   if (esp_now_mod_peer(&peerInfo) != ESP_OK) {
     Serial.println("DONGLE - Errore nella modifica del canale");
   }
+
+  // 设置初始发送功率
+  esp_wifi_set_max_tx_power(tx_power);
 
   stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION;
   aux_buffer_tx[0] = CONNECTION_STATE::TX_DONGLE_SEARCH_GUN_BROADCAST; //1; // CONNECTION_STATE::TX_DONGLE_SEARCH_GUN_BROADCAST
@@ -593,46 +584,58 @@ bool SerialWireless_::connection_dongle() {
 }
 
 bool SerialWireless_::connection_gun_at_last_dongle() {
-  #define TIMEOUT_TX_PACKET_LAST_DONGLE 300 // in millisecondi - tempo di invio pacchetti ogni millisecondi quindi 4-5 pacchetti
-  #define TIMEOUT_DIALOGUE_LAST_DONGLE 2000 // in millisecondi - tempo massimo per ricerca ultimo dongle
+  #define TIMEOUT_TX_PACKET_LAST_DONGLE 200 // 优化发送间隔为200ms，提高响应速度
+  #define TIMEOUT_DIALOGUE_LAST_DONGLE 5000 // 优化超时时间为5秒，平衡连接稳定性和响应速度
+  #define MAX_RETRY_COUNT 3 // 最大重试次数
+  
   unsigned long lastMillis_tx_packet_last_dongle = 0;
-  unsigned long lastMillis_start_dialogue_last_dongle = millis ();
+  unsigned long lastMillis_start_dialogue_last_dongle = millis();
+  int retry_count = 0;
 
   uint8_t aux_buffer_tx[13];
   
+  // 重置连接状态
   stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION_DONGLE;
+  
+  // 准备数据包
   aux_buffer_tx[0] = CONNECTION_STATE::TX_CHECK_CONNECTION_LAST_DONGLE;
   memcpy(&aux_buffer_tx[1], SerialWireless.mac_esp_inteface, 6);
   memcpy(&aux_buffer_tx[7], peerAddress, 6);
-  // INVIA PACCHETTO .. VALUTARE SE INVIARNE PIU' DI UNO  NELL'ARCO DI POCO TEMPO
-  //SerialWireless.SendPacket((const uint8_t *)aux_buffer_tx, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
-  lastMillis_tx_packet_last_dongle = 0;
-  lastMillis_start_dialogue_last_dongle = millis();
+  
+  // 立即发送第一个包，不等待定时器
+  SerialWireless.SendPacket((const uint8_t *)aux_buffer_tx, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
+  lastMillis_tx_packet_last_dongle = millis();
+  
   while (!TinyUSBDevice.mounted() && 
          (stato_connessione_wireless != CONNECTION_STATE::DEVICES_CONNECTED_WITH_LAST_DONGLE) &&
          ((millis() - lastMillis_start_dialogue_last_dongle) < TIMEOUT_DIALOGUE_LAST_DONGLE)) { 
-      if ((millis() - lastMillis_tx_packet_last_dongle) > TIMEOUT_TX_PACKET_LAST_DONGLE)
-      {
+      if ((millis() - lastMillis_tx_packet_last_dongle) > TIMEOUT_TX_PACKET_LAST_DONGLE) {
         SerialWireless.SendPacket((const uint8_t *)aux_buffer_tx, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
         lastMillis_tx_packet_last_dongle = millis();
+        retry_count++;
+        
+        // 实现智能重试机制 - 随着重试次数增加，提高发送功率
+        if (retry_count >= MAX_RETRY_COUNT && retry_count % 2 == 0) {
+          // 尝试提高发送功率以增强信号
+          esp_wifi_set_max_tx_power(ESPNOW_WIFI_POWER_DEFAULT);
+        }
       }
     yield();
   }
+  
   if (stato_connessione_wireless == CONNECTION_STATE::DEVICES_CONNECTED_WITH_LAST_DONGLE) {    
     stato_connessione_wireless = CONNECTION_STATE::DEVICES_CONNECTED;
     
-    // ================ aggiunto =============================
-    /*
-    if (esp_now_del_peer(peerAddress) != ESP_OK) {  // cancella il broadcast dai peer
-      Serial.println("Errore nella cancellazione del peer");
-    }
-    */
-    // =============================================
-
+    // 连接成功后，恢复默认发送功率
+    esp_wifi_set_max_tx_power(espnow_wifi_power);
+    
     TinyUSBDevices.onBattery = true;
     return true;
   } else {
-    stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION; 
+    stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION;
+    
+    // 连接失败，恢复默认发送功率
+    esp_wifi_set_max_tx_power(espnow_wifi_power);
     return false;
   }
 }
@@ -733,16 +736,11 @@ void packet_callback_read_dongle() {
               aux_buffer[0] = CONNECTION_STATE::TX_CONFERM_CONNECTION_LAST_DONGLE; 
               memcpy(&aux_buffer[1], SerialWireless.mac_esp_inteface, 6);
               memcpy(&aux_buffer[7], peerAddress, 6);
-              // valutare se inviarlo un paio di volte il pacchetto o solo una volta
-              // lo invia 3 volte - una volta ogni 70ms
-              for (uint8_t i = 0; i<3; i++) {
-                if (i>0) {
-                  //vTaskDelay(pdMS_TO_TICKS(1000)); // equivalente a delay(1000) ma non bloccante su esp32
-                  unsigned long lastMillis_tx_packet_connection_last_dongle = millis();
-                  while ((millis() - lastMillis_tx_packet_connection_last_dongle) < 70) yield(); 
-                }
-                SerialWireless.SendPacket((const uint8_t *)aux_buffer, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
-              }
+              // 发送两次确认包，间隔减少到20ms
+              SerialWireless.SendPacket((const uint8_t *)aux_buffer, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
+              unsigned long lastMillis_tx_packet_connection_last_dongle = millis();
+              while ((millis() - lastMillis_tx_packet_connection_last_dongle) < 20) yield();
+              SerialWireless.SendPacket((const uint8_t *)aux_buffer, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
               // pachhetto da inviare
               ///////SerialWireless.SendPacket((const uint8_t *)aux_buffer, 13, PACKET_TX::CHECK_CONNECTION_LAST_DONGLE);
         }
@@ -863,23 +861,11 @@ void packet_callback_read_gun() {
               // INVIA ANCHE DATI RELATIVI A VID, PID, ECC,ECC, DELLA GUN
               memcpy(&aux_buffer[13], &usb_data_wireless, sizeof(usb_data_wireless));
 
-              // =========================================================
-              // INVIARE IL PACCHETTO FINALE PIU' VOLTE  
-              // =========================================================
-
-              //vTaskDelay(pdMS_TO_TICKS(1000)); // equivalente a delay(1000) ma non bloccante su esp32
-
-              //unsigned long lastMillis_tx_packet_gun_to_dongle_conferm = millis();
-              // invia il pacchetto di avvenuta connessione  3 volte - un pacchetto ogni 70ms
-              for (uint8_t i = 0; i<3; i++) {
-                if (i>0) {
-                  //vTaskDelay(pdMS_TO_TICKS(1000)); // equivalente a delay(1000) ma non bloccante su esp32
-                  unsigned long lastMillis_tx_packet_gun_to_dongle_conferm = millis();
-                  while ((millis() - lastMillis_tx_packet_gun_to_dongle_conferm) < 70) yield(); 
-                  //lastMillis_tx_packet_gun_to_dongle_conferm = millis();
-                }
-                SerialWireless.SendPacket((const uint8_t *)aux_buffer, sizeof(aux_buffer), PACKET_TX::CONNECTION);
-              }
+              // 简化确认包发送机制，发送两次间隔20ms
+              SerialWireless.SendPacket((const uint8_t *)aux_buffer, sizeof(aux_buffer), PACKET_TX::CONNECTION);
+              unsigned long lastMillis_tx_packet_gun_to_dongle_conferm = millis();
+              while ((millis() - lastMillis_tx_packet_gun_to_dongle_conferm) < 20) yield();
+              SerialWireless.SendPacket((const uint8_t *)aux_buffer, sizeof(aux_buffer), PACKET_TX::CONNECTION);
 
               /*
               while (!TinyUSBDevice.mounted() && 
