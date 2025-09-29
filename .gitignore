@@ -6,3 +6,5 @@
 /.vscode
 OpenFIRE-Firmware-ESP32/
 Firmware/
+wifi/
+GUN端断线重连实现指南.md
