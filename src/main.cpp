@@ -89,11 +89,66 @@ void setup() {
   
   // 频段切换功能
   // 初始化OLED显示
+  // 只初始化一次Serial，避免重复初始化导致调试信息丢失
+  Serial.begin(9600);
+  Serial.println("系统启动中...");
+  Serial.print("设备MAC地址: ");
+  Serial.println(macStr);
+  
+  // 初始化OLED显示
   #if defined(USES_OLED_DISPLAY)
+    Serial.println("===== OLED初始化调试 ======");
+    Serial.print("当前使用的SDA引脚: ");
+    Serial.println(OLED_SDA);
+    Serial.print("当前使用的SCL引脚: ");
+    Serial.println(OLED_SCL);
+    
+    // 扫描I2C总线，检查是否有设备
+    Serial.println("扫描I2C设备...");
+    byte error, address;
+    int nDevices = 0;
     Wire.begin(OLED_SDA, OLED_SCL);
-    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-      Serial.println(F("SSD1306初始化失败"));
+    
+    for(address = 1; address < 127; address++ ) {
+      // 开始传输到指定地址
+      Wire.beginTransmission(address);
+      error = Wire.endTransmission();
+      
+      if (error == 0) {
+        Serial.print("找到I2C设备，地址: 0x");
+        if (address<16) Serial.print("0");
+        Serial.println(address,HEX);
+        nDevices++;
+      }
     }
+    
+    if (nDevices == 0) {
+      Serial.println("未找到任何I2C设备!");
+    }
+    
+    // 初始化Wire库，使用标准速度（100kHz）
+    Wire.begin(OLED_SDA, OLED_SCL);
+    
+    // 尝试用默认地址初始化
+    Serial.println("尝试初始化OLED...");
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+      Serial.println("使用地址0x3C初始化SSD1306失败");
+      // 尝试备用地址
+      if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
+        Serial.println("使用地址0x3D初始化SSD1306也失败");
+      }
+    } else {
+      Serial.println("SSD1306初始化成功!");
+      // 测试显示
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setTextColor(SSD1306_WHITE);
+      display.setCursor(0, 0);
+      display.println("OpenFIRE DONGLE");
+      display.println("OLED测试成功!");
+      display.display();
+    }
+    Serial.println("===== OLED初始化完成 ======");
   #endif
   
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
@@ -185,7 +240,7 @@ void setup() {
   preferences.end(); // 完成后关闭Preferences
   
   // 添加调试信息
-  Serial.begin(9600);
+  Serial.println("\n===== 频道设置信息 ======");
   Serial.print("Selected channel: ");
   Serial.println(current_channel);
   Serial.print("espnow_wifi_channel: ");
@@ -299,9 +354,10 @@ void setup() {
 
   // Initializing the USB devices chunk.
   TinyUSBDevices.begin(1);
-  Serial.begin(9600);
+  // 注意：不要再次调用Serial.begin()，否则会重置串口
   Serial.setTimeout(0);
   Serial.setTxTimeoutMs(0);
+  Serial.println("\n===== USB初始化完成 ======");
   // ====== fine connessione USB ==========================================================================
   
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
