@@ -477,32 +477,15 @@ bool SerialWireless_::connection_dongle() {
   #define TIMEOUT_DIALOGUE 60000 // in millisecondi - 增加配对超时到60秒
   unsigned long lastMillis_tx_packet = millis ();
   unsigned long lastMillis_start_dialogue = millis ();
+  #define TIMEOUT_CHANGE_CHANNEL 2000 // in millisecondi - cambia canale ogni
+  unsigned long lastMillis_change_channel = millis ();
   uint8_t aux_buffer_tx[13];
-<<<<<<< HEAD
-  uint8_t packet_count = 0;
-
   
-  // 设置WiFi信道为固定值
-  if (esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE) != ESP_OK) {
-    Serial.printf("DONGLE - esp_wifi_set_channel failed!");
-  }
-  peerInfo.channel = channel;
-  if (esp_now_mod_peer(&peerInfo) != ESP_OK) {
-    Serial.println("DONGLE - Errore nella modifica del canale");
-  }
-
-=======
-  
->>>>>>> 7295502 (clean wirelles)
   stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION;
   aux_buffer_tx[0] = CONNECTION_STATE::TX_DONGLE_SEARCH_GUN_BROADCAST;
   memcpy(&aux_buffer_tx[1], SerialWireless.mac_esp_inteface, 6);
   memcpy(&aux_buffer_tx[7], peerAddress, 6);
-<<<<<<< HEAD
-
-=======
   
->>>>>>> 7295502 (clean wirelles)
   #if defined(DEVICE_LILYGO_T_DONGLE_S3)
     tft.fillRect(95,60,50,20,0/*BLACK*/);
     tft.setCursor(95, 60);  
@@ -520,44 +503,6 @@ bool SerialWireless_::connection_dongle() {
     display.display();
   #endif
   
-<<<<<<< HEAD
-  while (stato_connessione_wireless != CONNECTION_STATE::DEVICES_CONNECTED /*5*/) {
-    if (stato_connessione_wireless == CONNECTION_STATE::NONE_CONNECTION /*0*/) {
-      if ((millis() - lastMillis_tx_packet) > TIMEOUT_TX_PACKET) {
-        SerialWireless.SendPacket((const uint8_t *)aux_buffer_tx, 13, PACKET_TX::CONNECTION);
-        packet_count++;
-        
-        Serial.print("DONGLE - inviato pacchetto broadcast sul canale: ");
-        Serial.print(channel);
-        Serial.print(" (#");
-        Serial.print(packet_count);
-        Serial.println(")");
-        
-        #if defined(USES_OLED_DISPLAY)
-          // 定期更新OLED显示，先清除区域避免重影
-          if (packet_count % 10 == 0) {
-            // 清除显示包计数的整行区域
-            display.fillRect(0, 40, 128, 16, 0);
-            display.setCursor(0, 40);
-            display.print(F("Packets: "));
-            display.println(packet_count);
-            
-            // 显示信号强度 - 尝试直接读取WiFi RSSI作为后备方案
-            int8_t display_rssi = current_rssi;
-            if (display_rssi == 0 || display_rssi == -99) {
-              // 如果ESP-NOW回调获取的RSSI无效，尝试直接读取WiFi RSSI
-              display_rssi = WiFi.RSSI();
-            }
-            
-            display.setCursor(0, 50);
-            display.print(F("Signal: "));
-            display.print(display_rssi);
-            display.println(F(" dBm"));
-            display.display();
-          }
-        #endif
-        
-=======
   while (stato_connessione_wireless != CONNECTION_STATE::DEVICES_CONNECTED) {
     if (stato_connessione_wireless == CONNECTION_STATE::NONE_CONNECTION) {
       if (((millis() - lastMillis_change_channel) > TIMEOUT_CHANGE_CHANNEL) && 
@@ -585,65 +530,21 @@ bool SerialWireless_::connection_dongle() {
         SerialWireless.SendPacket((const uint8_t *)aux_buffer_tx, 13, PACKET_TX::CONNECTION);
         //Serial.print("DONGLE - inviato pacchetto broadcast sul canale: ");
         //Serial.println(channel);
->>>>>>> 7295502 (clean wirelles)
         lastMillis_tx_packet = millis (); 
       }
       lastMillis_start_dialogue = millis();
     }
     else {
-<<<<<<< HEAD
-      if (((millis() - lastMillis_start_dialogue) > TIMEOUT_DIALOGUE) && stato_connessione_wireless != CONNECTION_STATE::DEVICES_CONNECTED /*5*/) {
-        stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION; //0; // CONNECTION_STATE::NONE;
-        Serial.println("DONGLE - Non si è conclusa la negoziazione tra DONGLE/GUN e si riparte da capo");
-        
-        #if defined(USES_OLED_DISPLAY)
-          display.clearDisplay();
-          display.setCursor(0, 0);
-          display.println(F("Retrying..."));
-          display.print(F("Channel: "));
-          display.println(channel);
-          display.println(F("Sending packets..."));
-          display.display();
-        #endif
-=======
       if (((millis() - lastMillis_start_dialogue) > TIMEOUT_DIALOGUE) && stato_connessione_wireless != CONNECTION_STATE::DEVICES_CONNECTED) {
         stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION;
         //Serial.println("DONGLE - Non si è conclusa la negoziazione tra DONGLE/GUN e si riparte da capo");
         lastMillis_change_channel = millis ();
->>>>>>> 7295502 (clean wirelles)
       }  
     }
     yield(); // in attesa dello stabilimento di una connessione
   }
   
-<<<<<<< HEAD
-  Serial.println("DONGLE - Negosazione completata - associazione dei dispositivi GUN/DONGLE");
-  
-  #if defined(USES_OLED_DISPLAY)
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.println(F("Connected!"));
-    display.print(F("Channel: "));
-    display.println(channel);
-    display.print(F("Total packets: "));
-    display.println(packet_count);
-    
-    // 显示信号强度 - 尝试直接读取WiFi RSSI作为后备方案
-    int8_t display_rssi = current_rssi;
-    if (display_rssi == 0 || display_rssi == -99) {
-      // 如果ESP-NOW回调获取的RSSI无效，尝试直接读取WiFi RSSI
-      display_rssi = WiFi.RSSI();
-    }
-    
-    display.print(F("Signal: "));
-    display.print(display_rssi);
-    display.println(F(" dBm"));
-    display.display();
-    delay(1000);
-  #endif
-=======
   //Serial.println("DONGLE - Negosazione completata - associazione dei dispositivi GUN/DONGLE");
->>>>>>> 7295502 (clean wirelles)
   if (esp_now_del_peer(peerAddress) != ESP_OK) {  // cancella il broadcast dai peer
     //Serial.println("DONGLE - Errore nella cancellazione del peer broadcast");
   }
@@ -695,23 +596,13 @@ bool SerialWireless_::connection_gun_at_last_dongle() {
 
 bool SerialWireless_::connection_gun() {
 
-<<<<<<< HEAD
-  // fare il begin qui o nel main setup ?
-
-  #define TIMEOUT_GUN_DIALOGUE 60000 // in millisecondi - 增加连接超时到60秒
-  unsigned long lastMillis_start_dialogue = millis ();
-
-  // 使用固定信道（与DONGLE相同的信道）
-  uint8_t channel = espnow_wifi_channel;
-=======
   #define TIMEOUT_GUN_DIALOGUE 1000 // in millisecondi
   unsigned long lastMillis_start_dialogue = millis ();
->>>>>>> 7295502 (clean wirelles)
   
-  // 设置WiFi信道为固定值
-  if (esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE) != ESP_OK) {
-    Serial.printf("GUN - esp_wifi_set_channel failed!");
-  }
+  // // 设置WiFi信道为固定值
+  // if (esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE) != ESP_OK) {
+  //   Serial.printf("GUN - esp_wifi_set_channel failed!");
+  // }
 
   lastMillis_start_dialogue = millis ();
   stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION;
@@ -722,32 +613,20 @@ bool SerialWireless_::connection_gun() {
   }
   memcpy(peerAddress, BROADCAST_ADDR, 6);
   memcpy(peerInfo.peer_addr, peerAddress, 6);
-  peerInfo.channel = channel; // 设置peer使用相同的固定信道
-  peerInfo.encrypt = false;
+  // peerInfo.channel = channel; // 设置peer使用相同的固定信道
+  // peerInfo.encrypt = false;
   
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {  // inserisce il dongle nei peer
     //Serial.println("Errore nell'aggiunta del nuovo peer");
   }                       
   // ====================================================
 
-<<<<<<< HEAD
-  Serial.printf("GUN - In attesa della connessione sul canale fisso: %d\n", channel);
-
-  while(!TinyUSBDevice.mounted() && stato_connessione_wireless != CONNECTION_STATE::TX_GUN_TO_DONGLE_CONFERM /*4*/) { 
-    if (stato_connessione_wireless == CONNECTION_STATE::NONE_CONNECTION /*0*/) {
-      lastMillis_start_dialogue = millis ();
-    }
-    if (((millis() - lastMillis_start_dialogue) > TIMEOUT_GUN_DIALOGUE) && stato_connessione_wireless != CONNECTION_STATE::TX_GUN_TO_DONGLE_CONFERM /*4*/) {
-      stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION; //0; // CONNECTION_STATE::NONE;
-      Serial.println("GUN - Timeout, riprovando a connettersi sullo stesso canale...");
-=======
   while(!TinyUSBDevice.mounted() && stato_connessione_wireless != CONNECTION_STATE::TX_GUN_TO_DONGLE_CONFERM) { 
     if (stato_connessione_wireless == CONNECTION_STATE::NONE_CONNECTION) {
       lastMillis_start_dialogue = millis ();
     }
     if (((millis() - lastMillis_start_dialogue) > TIMEOUT_GUN_DIALOGUE) && stato_connessione_wireless != CONNECTION_STATE::TX_GUN_TO_DONGLE_CONFERM) {
       stato_connessione_wireless = CONNECTION_STATE::NONE_CONNECTION;
->>>>>>> 7295502 (clean wirelles)
     }
   }
 
