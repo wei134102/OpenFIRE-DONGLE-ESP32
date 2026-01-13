@@ -5,6 +5,20 @@
 
 #include "TinyUSB_Devices.h"
 
+#if defined(USES_OLED_DISPLAY)
+	#include "OpenFIRE_logo.h"
+  #include <Wire.h>
+  #include <Adafruit_GFX.h>
+  #include <Adafruit_SSD1306.h>
+  #include <WiFi.h>
+  
+  #define SCREEN_WIDTH 128 // OLED显示屏宽度，单位：像素
+  #define SCREEN_HEIGHT 64 // OLED显示屏高度，单位：像素
+  #define OLED_RESET    -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+  
+  Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#endif
+
 #ifdef USES_DISPLAY
   #include "OpenFIRE_logo.h"
   #ifdef USE_LOVYAN_GFX
