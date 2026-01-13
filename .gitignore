@@ -8,3 +8,5 @@ OpenFIRE-Firmware-ESP32/
 Firmware/
 wifi/
 GUN端断线重连实现指南.md
+src/main_new.cpp
+lib/OpenFIRE_Wireless/ESP32/OpenFIRE_Wireless_new.cpp
