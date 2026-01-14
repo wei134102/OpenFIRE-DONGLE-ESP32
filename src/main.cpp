@@ -145,6 +145,87 @@ void setup() {
     //tft.fillRect(100,60,50,20,0/*BLACK*/);
   #endif //USES_DISPLAY
 
+	// 初始化OLED显示
+	#if defined(USES_OLED_DISPLAY)
+    Serial.println("===== OLED初始化调试 ======");
+    Serial.print("当前使用的SDA引脚: ");
+    Serial.println(OLED_SDA);
+    Serial.print("当前使用的SCL引脚: ");
+    Serial.println(OLED_SCL);
+
+    // 扫描I2C总线，检查是否有设备
+    Serial.println("扫描I2C设备...");
+    byte error, address;
+    int nDevices = 0;
+    Wire.begin(OLED_SDA, OLED_SCL);
+
+	for(address = 1; address < 127; address++ ) {
+	  // 开始传输到指定地址
+	  Wire.beginTransmission(address);
+	  error = Wire.endTransmission();
+	  
+	  if (error == 0) {
+		Serial.print("找到I2C设备，地址: 0x");
+		if (address<16) Serial.print("0");
+		Serial.println(address,HEX);
+		nDevices++;
+	    }
+	  }
+
+	if (nDevices == 0) {
+	  Serial.println("未找到任何I2C设备!");
+	}
+
+	// 初始化Wire库，使用标准速度（100kHz）
+	Wire.begin(OLED_SDA, OLED_SCL);
+
+	// 尝试用默认地址初始化
+	Serial.println("尝试初始化OLED...");
+	if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+	  Serial.println("使用地址0x3C初始化SSD1306失败");
+	  // 尝试备用地址
+	  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) {
+		Serial.println("使用地址0x3D初始化SSD1306也失败");
+	  }
+	} else {
+	  Serial.println("SSD1306初始化成功!");
+	  // 测试显示
+	  display.clearDisplay();
+	  display.setTextSize(1);
+	  display.setTextColor(SSD1306_WHITE);
+	  display.setCursor(0, 0);
+	  display.println("OpenFIRE DONGLE");
+	  display.println("OLED test sucessed");
+	  display.display();
+	}
+	Serial.println("===== OLED初始化完成 ======");
+	#endif
+
+	// 添加TFT显示内容的OLED版本
+	#if defined(USES_OLED_DISPLAY)
+	// 清屏并显示搜索状态
+	display.clearDisplay();
+	display.setTextSize(1);
+	display.setTextColor(SSD1306_WHITE);
+	display.setCursor(0, 0);
+	display.println("SEARCHING");
+	
+	// 显示通道信息
+	display.setTextSize(1);
+	display.setCursor(0, 20);
+	display.println("Channel:");
+	
+	// 显示OpenFIRE标识
+	display.setCursor(0, 35);
+	display.println("OpenFIRE");
+	display.println("DONGLE");
+	
+	// 更新显示
+	display.display();
+	#endif
+
+
+
   // ====== gestione connessione wireless ====================
   SerialWireless.init_wireless();
   SerialWireless.begin();
@@ -189,6 +270,31 @@ void setup() {
     tft.printf("Channel: %d", usb_data_wireless.channel);
 
   #endif // USES_DISPLAY
+
+  // 添加连接成功后OLED显示内容
+  #if defined(USES_OLED_DISPLAY)
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    
+    // 显示设备名称
+    display.setCursor(0, 0);
+    display.println(usb_data_wireless.deviceName);
+    
+    // 显示玩家信息
+    display.setCursor(0, 20);
+    display.printf("Player: %d", usb_data_wireless.devicePlayer);
+    
+    // 显示通道信息
+    display.setCursor(0, 35);
+    display.printf("Channel: %d", usb_data_wireless.channel);
+    
+    // 显示连接状态
+    display.setCursor(0, 50);
+    display.println("CONNECTED");
+    
+    display.display();
+  #endif // USES_OLED_DISPLAY
 }
 
 #define FIFO_SIZE_READ_SER 200  // l'originale era 32

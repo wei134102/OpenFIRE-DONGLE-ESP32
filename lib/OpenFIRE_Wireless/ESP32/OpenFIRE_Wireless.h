@@ -61,6 +61,14 @@
   #include "esp_wifi.h"
   #include "freertos/semphr.h"
   #include "esp_timer.h"
+  
+  // OLED显示支持
+  #if defined(USES_OLED_DISPLAY)
+    #include <Wire.h>
+    #include <Adafruit_GFX.h>
+    #include <Adafruit_SSD1306.h>
+    extern Adafruit_SSD1306 display;
+  #endif
 #elif defined(ARDUINO_ARCH_RP2040)
   // vediamo
 #endif

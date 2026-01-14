@@ -947,6 +947,18 @@ bool SerialWireless_::connection_dongle() {
       tft.setCursor(95, 60);  
       tft.printf("%2d", channel);
     #endif //USES_DISPLAY
+    
+    // 添加OLED显示通道号
+    #if defined(USES_OLED_DISPLAY)
+      display.clearDisplay();
+      display.setTextSize(1);
+      display.setTextColor(SSD1306_WHITE);
+      display.setCursor(0, 0);
+      display.println("Searching...");
+      display.setCursor(0, 30);
+      display.printf("Channel: %2d", channel);
+      display.display();
+    #endif // USES_OLED_DISPLAY
   #endif //DONGLE
   
   
@@ -963,6 +975,18 @@ bool SerialWireless_::connection_dongle() {
             tft.setCursor(95, 60);
             tft.printf("%2d", channel);   
           #endif //USES_DISPLAY
+          
+          // 添加OLED显示通道号更新
+          #if defined(USES_OLED_DISPLAY)
+            display.clearDisplay();
+            display.setTextSize(2);
+            display.setTextColor(SSD1306_WHITE);
+            display.setCursor(0, 0);
+            display.println("Searching...");
+            display.setCursor(0, 30);
+            display.printf("Channel: %2d", channel);
+            display.display();
+          #endif // USES_OLED_DISPLAY
         #endif //DONGLE
         esp_wifi_set_promiscuous(true);
         if (esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE) != ESP_OK) {
