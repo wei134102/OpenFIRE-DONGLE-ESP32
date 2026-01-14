@@ -207,18 +207,17 @@ void setup() {
 	display.clearDisplay();
 	display.setTextSize(1);
 	display.setTextColor(SSD1306_WHITE);
-	display.setCursor(0, 0);
-	display.println("SEARCHING");
+	display.setCursor(20, 0);
+	display.println("OpenFIRE DONGLE");
 	
 	// 显示通道信息
-	display.setTextSize(1);
-	display.setCursor(0, 20);
-	display.println("Channel:");
-	
+	// display.setTextSize(1);
+	// display.setCursor(0, 20);
+	// display.println("Channel:");
+  display.drawBitmap(40, 15, customSplash, CUSTSPLASH_WIDTH, CUSTSPLASH_HEIGHT, SSD1306_WHITE);	
 	// 显示OpenFIRE标识
-	display.setCursor(0, 35);
-	display.println("OpenFIRE");
-	display.println("DONGLE");
+
+
 	
 	// 更新显示
 	display.display();
@@ -229,6 +228,7 @@ void setup() {
   // ====== gestione connessione wireless ====================
   SerialWireless.init_wireless();
   SerialWireless.begin();
+  delay(2000);
   SerialWireless.connection_dongle();
   // ====== fine gestione wireless .. va avanti solo dopo che si è accoppiato il dispositivo =======
 
@@ -277,21 +277,43 @@ void setup() {
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     
-    // 显示设备名称
-    display.setCursor(0, 0);
-    display.println(usb_data_wireless.deviceName);
-    
+    // 显示设备名称     // 显示连接状态
+    // display.setCursor(0, 0);
+    // display.println(usb_data_wireless.deviceName);
+    display.setCursor(60, 0);
+    // display.println("CONNECTED");
+    display.drawBitmap(20, 0, customSplashBanner, CUSTSPLASHBANN_WIDTH, CUSTSPLASHBANN_HEIGHT, SSD1306_WHITE);  
     // 显示玩家信息
-    display.setCursor(0, 20);
+    display.setCursor(0, 16);
     display.printf("Player: %d", usb_data_wireless.devicePlayer);
     
     // 显示通道信息
-    display.setCursor(0, 35);
+    display.setCursor(60, 16);
     display.printf("Channel: %d", usb_data_wireless.channel);
     
-    // 显示连接状态
-    display.setCursor(0, 50);
-    display.println("CONNECTED");
+    // 显示枪的MAC地址
+    display.setCursor(0, 26);
+    display.printf("Gun Mac:");
+    display.setCursor(0, 36);
+    display.printf("%02X:%02X:%02X:%02X:%02X:%02X", 
+                SerialWireless.mac_esp_another_card[0], 
+                SerialWireless.mac_esp_another_card[1], 
+                SerialWireless.mac_esp_another_card[2], 
+                SerialWireless.mac_esp_another_card[3], 
+                SerialWireless.mac_esp_another_card[4], 
+                SerialWireless.mac_esp_another_card[5]);
+  display.setCursor(0, 46);
+  display.printf("Dongle Mac:");
+  display.setCursor(0,56);
+  display.printf("%02X:%02X:%02X:%02X:%02X:%02X", 
+                SerialWireless.mac_esp_inteface[0], 
+                SerialWireless.mac_esp_inteface[1], 
+                SerialWireless.mac_esp_inteface[2], 
+                SerialWireless.mac_esp_inteface[3], 
+                SerialWireless.mac_esp_inteface[4], 
+                SerialWireless.mac_esp_inteface[5]);                
+    
+
     
     display.display();
   #endif // USES_OLED_DISPLAY

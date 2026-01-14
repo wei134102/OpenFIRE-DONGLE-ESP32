@@ -979,7 +979,7 @@ bool SerialWireless_::connection_dongle() {
           // 添加OLED显示通道号更新
           #if defined(USES_OLED_DISPLAY)
             display.clearDisplay();
-            display.setTextSize(2);
+            display.setTextSize(1);
             display.setTextColor(SSD1306_WHITE);
             display.setCursor(0, 0);
             display.println("Searching...");
